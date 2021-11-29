@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,44 +11,58 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-// TODO: add flags
-// TODO: create auth middleware which checks HMAC http header
-// TODO: remove hardcode
+var (
+	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: DEV, DEBUG, INFO, WARN, ERROR, FATAL. Default logging level INFO.")
+	bindAddr               = flag.String("bind-addr", ":8080", "Local network address to bind the HTTP API of the service on. Default value is ':8080'.")
+	network                = flag.String("network", "mainnet", "WAVES network type. Supported values: mainnet, testnet, stagenet.")
+	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
+	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval. Default value 1m.")
+	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
+
+	criterionNodesDownTotalPercentage                  = flag.Float64("criterion-down-total-percentage", 0.3, "")
+	criterionNodesDownNodesDownOnSameVersionPercentage = flag.Float64("criterion-down-on-same-version-percentage", 0.5, "")
+	criterionNodesDownRequireMinNodesOnSameVersion     = flag.Int("criterion-down-require-min-nodes-on-same-version", 2, "")
+
+	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "")
+	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "")
+
+	criterionNodesStateHashMinStateHashGroupsOnSameHeight   = flag.Int("criterion-statehash-min-groups-on-same-height", 2, "")
+	criterionNodesStateHashMinValuableStateHashGroups       = flag.Int("criterion-statehash-min-valuable-groups", 2, "")
+	criterionNodesStateHashMinNodesInValuableStateHashGroup = flag.Int("criterion-statehash-min-nodes-in-valuable-group", 2, "")
+	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "")
+)
 
 func init() {
-	al := zap.NewAtomicLevel()
-	al.SetLevel(zap.DebugLevel)
-	ec := zap.NewDevelopmentEncoderConfig()
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(ec), zapcore.Lock(os.Stdout), al)
-	logger := zap.New(core)
-	zap.ReplaceGlobals(logger.WithOptions())
+	flag.Parse()
+	_, _ = SetupLogger(*logLevel)
 }
 
 func main() {
-	monitor, err := NewNetworkMonitoring(
-		"mainnet",
-		NewNodesStatsScraperHTTP("https://waves-nodes-get-height.wavesnodes.com/"),
-		5,
-		networkErrorCriteria{
-			nodesDown: nodesDownCriterion{
-				totalDownNodesPercentage:         0.5,
-				nodesDownOnSameVersionPercentage: 0.5,
-				requireMinNodesOnSameVersion:     2,
-			},
-			height: heightCriterion{
-				heightDiff:              10,
-				requireMinNodesOnHeight: 2,
-			},
-			stateHash: stateHashCriterion{
-				minStateHashGroupsOnSameHeight:   2,
-				minValuableStateHashGroups:       2,
-				minNodesInValuableStateHashGroup: 2,
-				requireMinNodesOnHeight:          4,
-			},
+	criteria := NetworkErrorCriteria{
+		NodesDown: NodesDownCriterion{
+			TotalDownNodesPercentage:         *criterionNodesDownTotalPercentage,
+			NodesDownOnSameVersionPercentage: *criterionNodesDownNodesDownOnSameVersionPercentage,
+			RequireMinNodesOnSameVersion:     *criterionNodesDownRequireMinNodesOnSameVersion,
 		},
+		NodesHeight: NodesHeightCriterion{
+			HeightDiff:              *criterionNodesHeightDiff,
+			RequireMinNodesOnHeight: *criterionNodesHeightRequireMinNodesOnHeight,
+		},
+		StateHash: NodesStateHashCriterion{
+			MinStateHashGroupsOnSameHeight:   *criterionNodesStateHashMinStateHashGroupsOnSameHeight,
+			MinValuableStateHashGroups:       *criterionNodesStateHashMinValuableStateHashGroups,
+			MinNodesInValuableStateHashGroup: *criterionNodesStateHashMinNodesInValuableStateHashGroup,
+			RequireMinNodesOnHeight:          *criterionNodesStateHashRequireMinNodesOnHeight,
+		},
+	}
+
+	monitor, err := NewNetworkMonitoring(
+		*network,
+		NewNodesStatsScraperHTTP(*nodeStatsURL),
+		*networkErrorsStreak,
+		criteria,
 	)
 	if err != nil {
 		zap.S().Fatalf("failed to init monitor: %v", err)
@@ -73,19 +88,17 @@ func main() {
 		}()
 
 		service := NewNetworkMonitoringService(&monitor)
-		// TODO: remove hardcoded duration
-		monitorDone := monitor.RunInBackground(ctx, time.Minute)
+		monitorDone := monitor.RunInBackground(ctx, *pollNodesStatsInterval)
 
-		// TODO: remove hardcoded address
-		server := http.Server{Addr: ":8080", Handler: nil}
+		server := http.Server{Addr: *bindAddr, Handler: nil}
 		server.RegisterOnShutdown(func() {
 			// wait for monitor
 			<-monitorDone
 		})
 
 		http.HandleFunc("/health", service.NetworkHealth)
-		// TODO: uncomment when AUTH middleware will be done
-		//http.HandleFunc("/state", service.SetMonitorState)
+		// TODO: protect this by AUTH middleware
+		http.HandleFunc("/state", service.SetMonitorState)
 
 		// run graceful HTTP shutdown worker
 		go func() {

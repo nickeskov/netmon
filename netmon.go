@@ -56,14 +56,14 @@ type NetworkMonitor struct {
 
 	// criteria fields
 	alertOnNetworkErrorStreak int
-	criteria                  networkErrorCriteria
+	criteria                  NetworkErrorCriteria
 }
 
 func NewNetworkMonitoring(
 	networkPrefix string,
 	nodesStatsScraper NodesStatsScrapper,
 	alertOnNetworkErrorStreak int,
-	criteria networkErrorCriteria,
+	criteria NetworkErrorCriteria,
 ) (NetworkMonitor, error) {
 	if alertOnNetworkErrorStreak < 1 {
 		return NetworkMonitor{}, errors.New("alertOnNetworkErrorStreak should be greater that zero")

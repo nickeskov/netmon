@@ -16,6 +16,11 @@ func NewNetworkMonitoringService(monitor *NetworkMonitor) NetworkMonitoringServi
 }
 
 func (s *NetworkMonitoringService) NetworkHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
 	type statusResponse struct {
 		Status bool `json:"status"`
 	}
@@ -26,6 +31,11 @@ func (s *NetworkMonitoringService) NetworkHealth(w http.ResponseWriter, r *http.
 
 // SetMonitorState MUST be protected by auth middleware
 func (s *NetworkMonitoringService) SetMonitorState(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
 	type stateChangeRequest struct {
 		State string `json:"state"`
 	}
