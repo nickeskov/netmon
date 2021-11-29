@@ -44,7 +44,7 @@ func (s *NetworkMonitoringService) SetMonitorState(w http.ResponseWriter, r *htt
 
 	var jsonRequest stateChangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&jsonRequest); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
