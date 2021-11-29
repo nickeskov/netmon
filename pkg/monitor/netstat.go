@@ -10,8 +10,6 @@ import (
 
 type NodesDownCriterion struct {
 	TotalDownNodesPart float64
-	//NodesDownOnSameVersionPart float64
-	//RequireMinNodesOnSameVersion int // minimum required count of nodes that have save version to activate this criterion
 }
 
 type NodesHeightCriterion struct {
@@ -20,9 +18,9 @@ type NodesHeightCriterion struct {
 }
 
 type NodesStateHashCriterion struct {
-	MinStateHashGroupsOnSameHeight   int // I guess, default minimum should be 2
-	MinValuableStateHashGroups       int // I guess, default minimum should be 2
-	MinNodesInValuableStateHashGroup int // I guess, default minimum should be 2
+	MinStateHashGroupsOnSameHeight   int
+	MinValuableStateHashGroups       int
+	MinNodesInValuableStateHashGroup int
 	RequireMinNodesOnHeight          int // minimum required count of nodes on the same height to activate this criterion
 }
 

@@ -8,8 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate mockgen -source=pkg/scraper/scraper.go -destination=pkg/mock/scraper_mock.go -package=mock
-
 type NodesStatsScrapper interface {
 	ScrapeNodeStats() (NodesWithStats, error)
 }

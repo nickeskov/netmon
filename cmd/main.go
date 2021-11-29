@@ -25,8 +25,6 @@ var (
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
 
 	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "")
-	//criterionNodesDownNodesDownOnSameVersionPart   = flag.Float64("criterion-down-on-same-version-part", 0.5, "")
-	//criterionNodesDownRequireMinNodesOnSameVersion = flag.Int("criterion-down-require-min-nodes-on-same-version", 2, "")
 
 	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "")
 	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "")
@@ -46,8 +44,6 @@ func main() {
 	criteria := monitor.NetworkErrorCriteria{
 		NodesDown: monitor.NodesDownCriterion{
 			TotalDownNodesPart: *criterionNodesDownTotalPart,
-			//NodesDownOnSameVersionPart:   *criterionNodesDownNodesDownOnSameVersionPart,
-			//RequireMinNodesOnSameVersion: *criterionNodesDownRequireMinNodesOnSameVersion,
 		},
 		NodesHeight: monitor.NodesHeightCriterion{
 			HeightDiff:              *criterionNodesHeightDiff,

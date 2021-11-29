@@ -13,19 +13,19 @@ import (
 type NetworkMonitoringState int32
 
 const (
-	MonitorActive NetworkMonitoringState = iota + 1
-	MonitorFrozenNetworkOperatesStable
-	MonitorFrozenNetworkDegraded
+	StateActive NetworkMonitoringState = iota + 1
+	StateFrozenNetworkOperatesStable
+	StateFrozenNetworkDegraded
 )
 
 func NewNetworkMonitoringStateFromString(state string) (NetworkMonitoringState, error) {
 	switch state {
 	case "active":
-		return MonitorActive, nil
+		return StateActive, nil
 	case "frozen_operates_stable":
-		return MonitorFrozenNetworkOperatesStable, nil
+		return StateFrozenNetworkOperatesStable, nil
 	case "frozen_degraded":
-		return MonitorFrozenNetworkDegraded, nil
+		return StateFrozenNetworkDegraded, nil
 	default:
 		return 0, errors.Errorf("failed parse network monitoring state from string: invalid state string %q", state)
 	}
@@ -33,11 +33,11 @@ func NewNetworkMonitoringStateFromString(state string) (NetworkMonitoringState, 
 
 func (n NetworkMonitoringState) String() string {
 	switch n {
-	case MonitorActive:
+	case StateActive:
 		return "active"
-	case MonitorFrozenNetworkOperatesStable:
+	case StateFrozenNetworkOperatesStable:
 		return "frozen_operates_stable"
-	case MonitorFrozenNetworkDegraded:
+	case StateFrozenNetworkDegraded:
 		return "frozen_degraded"
 	default:
 		return fmt.Sprintf("unknown state (%d)", n)
@@ -69,7 +69,7 @@ func NewNetworkMonitoring(
 		return NetworkMonitor{}, errors.New("alertOnNetworkErrorStreak should be greater that zero")
 	}
 	return NetworkMonitor{
-		monitorState:              MonitorActive,
+		monitorState:              StateActive,
 		networkPrefix:             networkPrefix,
 		scrapper:                  nodesStatsScraper,
 		alertOnNetworkErrorStreak: alertOnNetworkErrorStreak,
@@ -78,7 +78,7 @@ func NewNetworkMonitoring(
 }
 
 func (m *NetworkMonitor) CheckNodes() error {
-	if m.State() != MonitorActive {
+	if m.State() != StateActive {
 		// monitor is frozen - skip check
 		return nil
 	}
@@ -91,8 +91,9 @@ func (m *NetworkMonitor) CheckNodes() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.monitorState != MonitorActive {
-		return nil // monitor is frozen -
+	if m.monitorState != StateActive {
+		// monitor is frozen - skip check
+		return nil
 	}
 
 	calc, err := newNetstatCalculator(m.criteria, allNodes.NodesWithNetworkPrefix(m.networkPrefix))
@@ -117,11 +118,11 @@ func (m *NetworkMonitor) NetworkOperatesStable() bool {
 	defer m.mu.RUnlock()
 
 	switch m.monitorState {
-	case MonitorActive:
+	case StateActive:
 		return m.networkErrorStreak < m.alertOnNetworkErrorStreak
-	case MonitorFrozenNetworkDegraded:
+	case StateFrozenNetworkDegraded:
 		return false
-	case MonitorFrozenNetworkOperatesStable:
+	case StateFrozenNetworkOperatesStable:
 		return true
 	default:
 		panic("unknown monitor state")
