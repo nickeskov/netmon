@@ -29,7 +29,7 @@ func init() {
 func main() {
 	monitor, err := NewNetworkMonitoring(
 		"mainnet",
-		"https://waves-nodes-get-height.wavesnodes.com/",
+		NewNodesStatsScraperHTTP("https://waves-nodes-get-height.wavesnodes.com/"),
 		5,
 		networkErrorCriteria{
 			nodesDown: nodesDownCriterion{
@@ -117,5 +117,5 @@ func main() {
 	if err := <-httpDone; err != nil {
 		zap.S().Fatalf("HTTP server error: %v", err)
 	}
-	zap.S().Infof("server is stopped successfully")
+	zap.S().Infof("server has been stopped successfully")
 }

@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
@@ -49,13 +47,12 @@ func (n NetworkMonitoringState) String() string {
 type NetworkMonitor struct {
 	mu sync.RWMutex
 
+	networkPrefix string
+	scrapper      NodesStatsScrapper
+
 	// state fields
 	monitorState       NetworkMonitoringState
 	networkErrorStreak int
-
-	// data fields
-	networkPrefix string
-	nodesStatsUrl string
 
 	// criteria fields
 	alertOnNetworkErrorStreak int
@@ -64,7 +61,7 @@ type NetworkMonitor struct {
 
 func NewNetworkMonitoring(
 	networkPrefix string,
-	nodesStatsUrl string,
+	nodesStatsScraper NodesStatsScrapper,
 	alertOnNetworkErrorStreak int,
 	criteria networkErrorCriteria,
 ) (NetworkMonitor, error) {
@@ -74,71 +71,54 @@ func NewNetworkMonitoring(
 	return NetworkMonitor{
 		monitorState:              MonitorActive,
 		networkPrefix:             networkPrefix,
-		nodesStatsUrl:             nodesStatsUrl,
+		scrapper:                  nodesStatsScraper,
 		alertOnNetworkErrorStreak: alertOnNetworkErrorStreak,
 		criteria:                  criteria,
 	}, nil
 }
 
-func (n *NetworkMonitor) CheckNodes() error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+func (m *NetworkMonitor) CheckNodes() error {
+	if m.State() != MonitorActive {
+		// monitor is frozen - skip check
+		return nil
+	}
 
-	if n.monitorState != MonitorActive {
+	allNodes, err := m.scrapper.ScrapeNodeStats()
+	if err != nil {
+		return err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.monitorState != MonitorActive {
 		return nil // monitor is frozen -
 	}
-	resp, err := http.Get(n.nodesStatsUrl)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			zap.S().Errorf("failed to close response body: %v", err)
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("failed to get nodes statuses from %q, HTTP code(%d) %q",
-			n.nodesStatsUrl,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
-	nodes := nodesWithStats{}
-	if err := json.NewDecoder(resp.Body).Decode(&nodes); err != nil {
-		return err
-	}
-
-	networkNodes := nodes.NodesWithNetworkPrefix(n.networkPrefix)
-	calc, err := newNetstatCalculator(n.criteria, networkNodes)
+	calc, err := newNetstatCalculator(m.criteria, allNodes.NodesWithNetworkPrefix(m.networkPrefix))
 	if err != nil {
 		return err
 	}
 
-	zap.S().Debugf("stats successfully received from %q, calculate network error criteria", n.nodesStatsUrl)
-
-	// TODO: add other types of checks
 	if calc.AlertDownNodesCriterion() || calc.AlertHeightCriterion() || calc.AlertStateHashCriterion() {
-		zap.S().Debugf("network %q error has been detected, increasing networkErrorStreak counter", n.networkPrefix)
+		zap.S().Debugf("network %q error has been detected, increasing networkErrorStreak counter", m.networkPrefix)
 		// increment error streak counter
-		n.networkErrorStreak++
-
+		m.networkErrorStreak++
 	} else {
 		// all ok - reset streak
-		zap.S().Debugf("network %q operates normally and alert hasn't been generated", n.networkPrefix)
-		n.networkErrorStreak = 0
+		zap.S().Debugf("network %q operates normally and alert hasn't been generated", m.networkPrefix)
+		m.networkErrorStreak = 0
 	}
 	return nil
 }
 
-func (n *NetworkMonitor) NetworkOperatesStable() bool {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
+func (m *NetworkMonitor) NetworkOperatesStable() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
-	switch n.monitorState {
+	switch m.monitorState {
 	case MonitorActive:
-		return n.networkErrorStreak < n.alertOnNetworkErrorStreak
+		return m.networkErrorStreak < m.alertOnNetworkErrorStreak
 	case MonitorFrozenNetworkDegraded:
 		return false
 	case MonitorFrozenNetworkOperatesStable:
@@ -148,23 +128,29 @@ func (n *NetworkMonitor) NetworkOperatesStable() bool {
 	}
 }
 
-func (n *NetworkMonitor) ChangeState(state NetworkMonitoringState) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+func (m *NetworkMonitor) State() NetworkMonitoringState {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.monitorState
+}
 
-	if n.monitorState == state {
+func (m *NetworkMonitor) ChangeState(state NetworkMonitoringState) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.monitorState == state {
 		return // state the same - do nothing
 	}
 
 	zap.S().Debugf("changing monitor state to %q", state.String())
-	n.monitorState = state
+	m.monitorState = state
 	// we have to reset the streak in case of state changing
-	n.networkErrorStreak = 0
+	m.networkErrorStreak = 0
 }
 
-func (n *NetworkMonitor) Run(ctx context.Context, pollNodesStatsInterval time.Duration) {
+func (m *NetworkMonitor) Run(ctx context.Context, pollNodesStatsInterval time.Duration) {
 	for {
-		if err := n.CheckNodes(); err != nil {
+		if err := m.CheckNodes(); err != nil {
 			zap.S().Errorf("failed to check nodes status: %v", err)
 		}
 		select {
@@ -176,13 +162,13 @@ func (n *NetworkMonitor) Run(ctx context.Context, pollNodesStatsInterval time.Du
 	}
 }
 
-func (n *NetworkMonitor) RunInBackground(ctx context.Context, pollNodesStatsInterval time.Duration) <-chan struct{} {
+func (m *NetworkMonitor) RunInBackground(ctx context.Context, pollNodesStatsInterval time.Duration) <-chan struct{} {
 	done := make(chan struct{}, 1)
 	go func() {
 		defer func() {
 			done <- struct{}{}
 		}()
-		n.Run(ctx, pollNodesStatsInterval)
+		m.Run(ctx, pollNodesStatsInterval)
 	}()
 	return done
 }
