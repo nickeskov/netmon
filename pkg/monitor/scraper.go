@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"encoding/json"
@@ -8,8 +8,10 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -source=pkg/scraper/scraper.go -destination=pkg/mock/scraper_mock.go -package=mock
+
 type NodesStatsScrapper interface {
-	ScrapeNodeStats() (nodesWithStats, error)
+	ScrapeNodeStats() (NodesWithStats, error)
 }
 
 type nodesStatsScrapper struct {
@@ -20,10 +22,10 @@ func NewNodesStatsScraperHTTP(nodesStatsUrl string) NodesStatsScrapper {
 	return nodesStatsScrapper{nodesStatsUrl: nodesStatsUrl}
 }
 
-func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
+func (s nodesStatsScrapper) ScrapeNodeStats() (NodesWithStats, error) {
 	resp, err := http.Get(s.nodesStatsUrl)
 	if err != nil {
-		return nodesWithStats{}, err
+		return NodesWithStats{}, err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -32,7 +34,7 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nodesWithStats{},
+		return NodesWithStats{},
 			errors.Errorf("failed to get nodes statuses from %q, HTTP code(%d) %q",
 				s.nodesStatsUrl,
 				resp.StatusCode,
@@ -40,9 +42,9 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 			)
 	}
 
-	allNodes := nodesWithStats{}
+	allNodes := NodesWithStats{}
 	if err := json.NewDecoder(resp.Body).Decode(&allNodes); err != nil {
-		return nodesWithStats{}, err
+		return NodesWithStats{}, err
 	}
 
 	zap.S().Debugf("stats successfully received from %q, calculate network error criteria", s.nodesStatsUrl)

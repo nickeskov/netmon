@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"testing"
@@ -13,10 +13,10 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 
 	scraperMock := NewMockNodesStatsScrapper(ctrl)
 	scraperMock.EXPECT().ScrapeNodeStats().Times(1).Return(
-		nodesWithStats{
-			{nodeStats: nodeStats{Height: 11}},
-			{nodeStats: nodeStats{Height: 11}},
-			{nodeStats: nodeStats{Height: -1}},
+		NodesWithStats{
+			{NodeStats: NodeStats{Height: 11}},
+			{NodeStats: NodeStats{Height: 11}},
+			{NodeStats: NodeStats{Height: -1}},
 		},
 		nil,
 	)

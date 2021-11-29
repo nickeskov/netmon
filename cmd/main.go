@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nickeskov/netmon/pkg/common"
+	"github.com/nickeskov/netmon/pkg/monitor"
+	"github.com/nickeskov/netmon/pkg/service"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -34,21 +37,23 @@ var (
 	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "")
 )
 
-func main() {
+func init() {
 	flag.Parse()
-	_, _ = SetupLogger(*logLevel)
+	_, _ = common.SetupLogger(*logLevel)
+}
 
-	criteria := NetworkErrorCriteria{
-		NodesDown: NodesDownCriterion{
+func main() {
+	criteria := monitor.NetworkErrorCriteria{
+		NodesDown: monitor.NodesDownCriterion{
 			TotalDownNodesPart: *criterionNodesDownTotalPart,
 			//NodesDownOnSameVersionPart:   *criterionNodesDownNodesDownOnSameVersionPart,
 			//RequireMinNodesOnSameVersion: *criterionNodesDownRequireMinNodesOnSameVersion,
 		},
-		NodesHeight: NodesHeightCriterion{
+		NodesHeight: monitor.NodesHeightCriterion{
 			HeightDiff:              *criterionNodesHeightDiff,
 			RequireMinNodesOnHeight: *criterionNodesHeightRequireMinNodesOnHeight,
 		},
-		StateHash: NodesStateHashCriterion{
+		StateHash: monitor.NodesStateHashCriterion{
 			MinStateHashGroupsOnSameHeight:   *criterionNodesStateHashMinStateHashGroupsOnSameHeight,
 			MinValuableStateHashGroups:       *criterionNodesStateHashMinValuableStateHashGroups,
 			MinNodesInValuableStateHashGroup: *criterionNodesStateHashMinNodesInValuableStateHashGroup,
@@ -56,9 +61,9 @@ func main() {
 		},
 	}
 
-	monitor, err := NewNetworkMonitoring(
+	mon, err := monitor.NewNetworkMonitoring(
 		*network,
-		NewNodesStatsScraperHTTP(*nodeStatsURL),
+		monitor.NewNodesStatsScraperHTTP(*nodeStatsURL),
 		*networkErrorsStreak,
 		criteria,
 	)
@@ -85,8 +90,8 @@ func main() {
 			}
 		}()
 
-		service := NewNetworkMonitoringService(&monitor)
-		monitorDone := monitor.RunInBackground(ctx, *pollNodesStatsInterval)
+		monitoringService := service.NewNetworkMonitoringService(&mon)
+		monitorDone := mon.RunInBackground(ctx, *pollNodesStatsInterval)
 
 		server := http.Server{Addr: *bindAddr, Handler: nil}
 		server.RegisterOnShutdown(func() {
@@ -94,9 +99,9 @@ func main() {
 			<-monitorDone
 		})
 
-		http.HandleFunc("/health", service.NetworkHealth)
+		http.HandleFunc("/health", monitoringService.NetworkHealth)
 		// TODO: protect this by AUTH middleware
-		http.HandleFunc("/state", service.SetMonitorState)
+		http.HandleFunc("/state", monitoringService.SetMonitorState)
 
 		// run graceful HTTP shutdown worker
 		go func() {

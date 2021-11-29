@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"math"
@@ -34,12 +34,12 @@ type NetworkErrorCriteria struct {
 
 type netstatCalculator struct {
 	criteria             NetworkErrorCriteria
-	allNodes             nodesWithStats
-	workingNodes         nodesWithStats
-	workingNodesOnHeight map[int]nodesWithStats
+	allNodes             NodesWithStats
+	workingNodes         NodesWithStats
+	workingNodesOnHeight map[int]NodesWithStats
 }
 
-func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes nodesWithStats) (netstatCalculator, error) {
+func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes NodesWithStats) (netstatCalculator, error) {
 	if len(allNodes) == 0 {
 		return netstatCalculator{}, errors.New("nodes with stats are empty")
 	}

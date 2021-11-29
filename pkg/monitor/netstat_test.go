@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"testing"
@@ -9,24 +9,24 @@ import (
 func TestNetstatCalculator_AlertDownNodesCriterion(t *testing.T) {
 	tests := []struct {
 		criteria       NetworkErrorCriteria
-		nodes          nodesWithStats
+		nodes          NodesWithStats
 		expectedResult bool
 	}{
 		{
 			criteria: NetworkErrorCriteria{NodesDown: NodesDownCriterion{TotalDownNodesPart: 0.33}},
-			nodes: nodesWithStats{
-				{nodeStats: nodeStats{Height: 11}},
-				{nodeStats: nodeStats{Height: 11}},
-				{nodeStats: nodeStats{Height: -1}},
+			nodes: NodesWithStats{
+				{NodeStats: NodeStats{Height: 11}},
+				{NodeStats: NodeStats{Height: 11}},
+				{NodeStats: NodeStats{Height: -1}},
 			},
 			expectedResult: true,
 		},
 		{
 			criteria: NetworkErrorCriteria{NodesDown: NodesDownCriterion{TotalDownNodesPart: 0.4}},
-			nodes: nodesWithStats{
-				{nodeStats: nodeStats{Height: 11}},
-				{nodeStats: nodeStats{Height: 11}},
-				{nodeStats: nodeStats{Height: -1}},
+			nodes: NodesWithStats{
+				{NodeStats: NodeStats{Height: 11}},
+				{NodeStats: NodeStats{Height: 11}},
+				{NodeStats: NodeStats{Height: -1}},
 			},
 			expectedResult: false,
 		},

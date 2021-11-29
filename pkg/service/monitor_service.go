@@ -1,15 +1,17 @@
-package main
+package service
 
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/nickeskov/netmon/pkg/monitor"
 )
 
 type NetworkMonitoringService struct {
-	monitor *NetworkMonitor
+	monitor *monitor.NetworkMonitor
 }
 
-func NewNetworkMonitoringService(monitor *NetworkMonitor) NetworkMonitoringService {
+func NewNetworkMonitoringService(monitor *monitor.NetworkMonitor) NetworkMonitoringService {
 	return NetworkMonitoringService{
 		monitor: monitor,
 	}
@@ -46,7 +48,7 @@ func (s *NetworkMonitoringService) SetMonitorState(w http.ResponseWriter, r *htt
 		return
 	}
 
-	monState, err := NewNetworkMonitoringStateFromString(jsonRequest.State)
+	monState, err := monitor.NewNetworkMonitoringStateFromString(jsonRequest.State)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
