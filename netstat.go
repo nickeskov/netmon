@@ -9,9 +9,9 @@ import (
 // TODO: add criteria validation
 
 type NodesDownCriterion struct {
-	TotalDownNodesPercentage         float64
-	NodesDownOnSameVersionPercentage float64
-	RequireMinNodesOnSameVersion     int // minimum required count of nodes that have save version to activate this criterion
+	TotalDownNodesPart float64
+	//NodesDownOnSameVersionPart float64
+	//RequireMinNodesOnSameVersion int // minimum required count of nodes that have save version to activate this criterion
 }
 
 type NodesHeightCriterion struct {
@@ -54,27 +54,8 @@ func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes nodesWithStats
 
 func (n *netstatCalculator) AlertDownNodesCriterion() bool {
 	downNodes := n.allNodes.DownNodes()
-	totalDownPercentage := float64(len(downNodes)) / float64(len(n.allNodes))
-
-	if totalDownPercentage >= n.criteria.NodesDown.TotalDownNodesPercentage {
-		return true
-	}
-
-	allNodesByVersion := n.allNodes.SplitByVersion()
-	for version, downNodesWithVersion := range downNodes.SplitByVersion() {
-		// check requirement
-		if len(downNodesWithVersion) < n.criteria.NodesDown.RequireMinNodesOnSameVersion {
-			continue
-		}
-
-		// check criterion
-		nodesDownPercentageOnSameHeight := float64(len(downNodesWithVersion)) / float64(len(allNodesByVersion[version]))
-
-		if nodesDownPercentageOnSameHeight >= n.criteria.NodesDown.NodesDownOnSameVersionPercentage {
-			return true
-		}
-	}
-	return false
+	totalDownPart := float64(len(downNodes)) / float64(len(n.allNodes))
+	return totalDownPart >= n.criteria.NodesDown.TotalDownNodesPart
 }
 
 func (n *netstatCalculator) AlertHeightCriterion() bool {

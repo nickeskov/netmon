@@ -21,9 +21,9 @@ var (
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval. Default value 1m.")
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
 
-	criterionNodesDownTotalPercentage                  = flag.Float64("criterion-down-total-percentage", 0.3, "")
-	criterionNodesDownNodesDownOnSameVersionPercentage = flag.Float64("criterion-down-on-same-version-percentage", 0.5, "")
-	criterionNodesDownRequireMinNodesOnSameVersion     = flag.Int("criterion-down-require-min-nodes-on-same-version", 2, "")
+	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "")
+	//criterionNodesDownNodesDownOnSameVersionPart   = flag.Float64("criterion-down-on-same-version-part", 0.5, "")
+	//criterionNodesDownRequireMinNodesOnSameVersion = flag.Int("criterion-down-require-min-nodes-on-same-version", 2, "")
 
 	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "")
 	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "")
@@ -34,17 +34,15 @@ var (
 	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "")
 )
 
-func init() {
+func main() {
 	flag.Parse()
 	_, _ = SetupLogger(*logLevel)
-}
 
-func main() {
 	criteria := NetworkErrorCriteria{
 		NodesDown: NodesDownCriterion{
-			TotalDownNodesPercentage:         *criterionNodesDownTotalPercentage,
-			NodesDownOnSameVersionPercentage: *criterionNodesDownNodesDownOnSameVersionPercentage,
-			RequireMinNodesOnSameVersion:     *criterionNodesDownRequireMinNodesOnSameVersion,
+			TotalDownNodesPart: *criterionNodesDownTotalPart,
+			//NodesDownOnSameVersionPart:   *criterionNodesDownNodesDownOnSameVersionPart,
+			//RequireMinNodesOnSameVersion: *criterionNodesDownRequireMinNodesOnSameVersion,
 		},
 		NodesHeight: NodesHeightCriterion{
 			HeightDiff:              *criterionNodesHeightDiff,
