@@ -10,13 +10,22 @@ import (
 	"go.uber.org/zap"
 )
 
-type NetworkMonitoringState int32
-
 const (
 	StateActive NetworkMonitoringState = iota + 1
 	StateFrozenNetworkOperatesStable
 	StateFrozenNetworkDegraded
 )
+
+type NetworkMonitoringState int32
+
+func (s NetworkMonitoringState) Validate() error {
+	switch s {
+	case StateActive, StateFrozenNetworkOperatesStable, StateFrozenNetworkDegraded:
+		return nil
+	default:
+		return errors.Errorf("invalid state (%d)", s)
+	}
+}
 
 func NewNetworkMonitoringStateFromString(state string) (NetworkMonitoringState, error) {
 	switch state {
@@ -31,8 +40,8 @@ func NewNetworkMonitoringStateFromString(state string) (NetworkMonitoringState, 
 	}
 }
 
-func (n NetworkMonitoringState) String() string {
-	switch n {
+func (s NetworkMonitoringState) String() string {
+	switch s {
 	case StateActive:
 		return "active"
 	case StateFrozenNetworkOperatesStable:
@@ -40,7 +49,7 @@ func (n NetworkMonitoringState) String() string {
 	case StateFrozenNetworkDegraded:
 		return "frozen_degraded"
 	default:
-		return fmt.Sprintf("unknown state (%d)", n)
+		return fmt.Sprintf("unknown state (%d)", s)
 	}
 }
 
@@ -60,6 +69,7 @@ type NetworkMonitor struct {
 }
 
 func NewNetworkMonitoring(
+	initialState NetworkMonitoringState,
 	networkPrefix string,
 	nodesStatsScraper NodesStatsScrapper,
 	alertOnNetworkErrorStreak int,
@@ -68,8 +78,11 @@ func NewNetworkMonitoring(
 	if alertOnNetworkErrorStreak < 1 {
 		return NetworkMonitor{}, errors.New("alertOnNetworkErrorStreak should be greater that zero")
 	}
+	if err := initialState.Validate(); err != nil {
+		return NetworkMonitor{}, err
+	}
 	return NetworkMonitor{
-		monitorState:              StateActive,
+		monitorState:              initialState,
 		networkPrefix:             networkPrefix,
 		scrapper:                  nodesStatsScraper,
 		alertOnNetworkErrorStreak: alertOnNetworkErrorStreak,
@@ -78,12 +91,12 @@ func NewNetworkMonitoring(
 }
 
 func (m *NetworkMonitor) CheckNodes() error {
-	if m.State() != StateActive {
-		// monitor is frozen - skip check
+	if state := m.State(); state != StateActive {
+		zap.S().Debugf("monitor is frozen, current state is %q", state)
 		return nil
 	}
 
-	allNodes, err := m.scrapper.ScrapeNodeStats()
+	allNetworksNodes, err := m.scrapper.ScrapeNodeStats()
 	if err != nil {
 		return err
 	}
@@ -91,12 +104,13 @@ func (m *NetworkMonitor) CheckNodes() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.monitorState != StateActive {
-		// monitor is frozen - skip check
+	if state := m.monitorState; state != StateActive {
+		zap.S().Debugf("monitor is frozen, current state is %q", state)
 		return nil
 	}
 
-	calc, err := newNetstatCalculator(m.criteria, allNodes.NodesWithNetworkPrefix(m.networkPrefix))
+	currentNetworkNodes := allNetworksNodes.NodesWithNetworkPrefix(m.networkPrefix)
+	calc, err := newNetstatCalculator(m.criteria, currentNetworkNodes)
 	if err != nil {
 		return err
 	}

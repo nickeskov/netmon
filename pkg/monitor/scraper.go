@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -32,6 +33,15 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 16*1024))
+		if err != nil {
+			return nil, err
+		}
+		zap.S().Errorf("stats sevice returned response with HTTP code %d %q, response is %q",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+			string(body),
+		)
 		return nodesWithStats{},
 			errors.Errorf("failed to get nodes statuses from %q, HTTP code(%d) %q",
 				s.nodesStatsUrl,
@@ -45,7 +55,7 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 		return nodesWithStats{}, err
 	}
 
-	zap.S().Debugf("stats successfully received from %q, calculate network error criteria", s.nodesStatsUrl)
+	zap.S().Debugf("stats successfully received from %q", s.nodesStatsUrl)
 
 	return allNodes, nil
 }

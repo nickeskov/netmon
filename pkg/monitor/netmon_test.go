@@ -22,6 +22,7 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 	)
 
 	mon, err := NewNetworkMonitoring(
+		StateActive,
 		"",
 		scraperMock,
 		1,
@@ -40,6 +41,7 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 
 func TestNetworkMonitor_ChangeState(t *testing.T) {
 	mon, err := NewNetworkMonitoring(
+		StateActive,
 		"",
 		nil,
 		5,
@@ -66,7 +68,6 @@ func TestNetworkMonitor_NetworkOperatesStable(t *testing.T) {
 		{6, false, StateActive},
 		{5, false, StateActive},
 		{4, true, StateActive},
-		{4, true, StateActive},
 
 		{0, false, StateFrozenNetworkDegraded},
 		{5, false, StateFrozenNetworkDegraded},
@@ -78,16 +79,16 @@ func TestNetworkMonitor_NetworkOperatesStable(t *testing.T) {
 		{0, true, StateFrozenNetworkOperatesStable},
 	}
 
-	for _, tc := range tests {
+	for i, tc := range tests {
 		mon, err := NewNetworkMonitoring(
+			tc.state,
 			"",
 			nil,
 			5,
 			NetworkErrorCriteria{},
 		)
 		require.NoError(t, err)
-		mon.monitorState = tc.state
 		mon.networkErrorStreak = tc.networkErrorStreak
-		require.Equal(t, tc.operatesStable, mon.NetworkOperatesStable())
+		require.Equal(t, tc.operatesStable, mon.NetworkOperatesStable(), "failed testcase #%d", i)
 	}
 }

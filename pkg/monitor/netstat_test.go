@@ -36,7 +36,7 @@ func TestNetstatCalculator_AlertDownNodesCriterion(t *testing.T) {
 		calc, err := newNetstatCalculator(tc.criteria, tc.nodes)
 		require.NoError(t, err)
 
-		require.Equal(t, tc.expectedResult, calc.AlertDownNodesCriterion(), "failed testcase", i)
+		require.Equal(t, tc.expectedResult, calc.AlertDownNodesCriterion(), "failed testcase #%d", i)
 	}
 }
 
@@ -98,7 +98,7 @@ func TestNetstatCalculator_AlertHeightCriterion(t *testing.T) {
 		calc, err := newNetstatCalculator(tc.criteria, tc.nodes)
 		require.NoError(t, err)
 
-		require.Equal(t, tc.expectedResult, calc.AlertHeightCriterion(), "failed testcase", i)
+		require.Equal(t, tc.expectedResult, calc.AlertHeightCriterion(), "failed testcase #%d", i)
 	}
 }
 
@@ -187,6 +187,6 @@ func TestNodesWithStats_SplitByStateHash(t *testing.T) {
 		calc, err := newNetstatCalculator(tc.criteria, tc.nodes)
 		require.NoError(t, err)
 
-		require.Equal(t, tc.expectedResult, calc.AlertStateHashCriterion(), "failed testcase", i)
+		require.Equal(t, tc.expectedResult, calc.AlertStateHashCriterion(), "failed testcase #%d", i)
 	}
 }

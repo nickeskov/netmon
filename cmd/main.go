@@ -17,12 +17,13 @@ import (
 )
 
 var (
-	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: DEV, DEBUG, INFO, WARN, ERROR, FATAL. Default logging level INFO.")
-	bindAddr               = flag.String("bind-addr", ":2048", "Local network address to bind the HTTP API of the service on. Default value is ':8080'.")
-	network                = flag.String("network", "mainnet", "WAVES network type. Supported values: mainnet, testnet, stagenet.")
+	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: 'DEV', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'.")
+	bindAddr               = flag.String("bind-addr", ":2048", "Local network address to bind the HTTP API of the service on.")
+	network                = flag.String("network", "mainnet", "WAVES network type. Supported networks: 'mainnet', 'testnet', 'stagenet'.")
 	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
-	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval. Default value 1m.")
+	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval.")
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
+	initialMonState        = flag.String("initial-mon-state", "active", "Initial monitoring state. Possible states: 'active', 'frozen_operates_stable', 'frozen_degraded'.")
 
 	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "Alert will be generated if detected down nodes part greater than that criterion.")
 
@@ -44,7 +45,12 @@ func main() {
 	zap.S().Info("starting server...")
 
 	if n := *network; n != "mainnet" && n != "testnet" && n != "stagenet" {
-		zap.S().Fatalf("invalid network %q")
+		zap.S().Fatalf("invalid network %q", n)
+	}
+
+	initialState, err := monitor.NewNetworkMonitoringStateFromString(*initialMonState)
+	if err != nil {
+		zap.S().Fatalf("invalid monitoring initial state %q", initialState)
 	}
 
 	criteria := monitor.NetworkErrorCriteria{
@@ -67,6 +73,7 @@ func main() {
 	}
 
 	mon, err := monitor.NewNetworkMonitoring(
+		initialState,
 		*network,
 		monitor.NewNodesStatsScraperHTTP(*nodeStatsURL),
 		*networkErrorsStreak,
