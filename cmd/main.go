@@ -24,15 +24,15 @@ var (
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval. Default value 1m.")
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
 
-	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "")
+	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "Alert will be generated if detected down nodes part greater than that criterion.")
 
-	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "")
-	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "")
+	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "Alert will be generated if detected height diff greater than that criterion.")
+	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "Minimum required amount of nodes on same height for height-diff criterion.")
 
-	criterionNodesStateHashMinStateHashGroupsOnSameHeight   = flag.Int("criterion-statehash-min-groups-on-same-height", 2, "")
-	criterionNodesStateHashMinValuableStateHashGroups       = flag.Int("criterion-statehash-min-valuable-groups", 2, "")
-	criterionNodesStateHashMinNodesInValuableStateHashGroup = flag.Int("criterion-statehash-min-nodes-in-valuable-group", 2, "")
-	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "")
+	criterionNodesStateHashMinStateHashGroupsOnSameHeight   = flag.Int("criterion-statehash-min-groups-on-same-height", 2, "Alert won't be generated if detected amount of statehash groups on same height lower than that criterion.")
+	criterionNodesStateHashMinValuableStateHashGroups       = flag.Int("criterion-statehash-min-valuable-groups", 2, "Alert won't be generated if detected amount of statehash 'valuable' groups on same height lower than that criterion.")
+	criterionNodesStateHashMinNodesInValuableStateHashGroup = flag.Int("criterion-statehash-min-nodes-in-valuable-group", 2, "StateHash group will be considered as 'valuable' if contains 'criterion-statehash-min-valuable-groups'.")
+	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "Minimum required amount of nodes on same height for statehash criterion.")
 )
 
 func init() {
