@@ -41,6 +41,8 @@ func init() {
 }
 
 func main() {
+	zap.S().Info("starting server...")
+
 	criteria := monitor.NetworkErrorCriteria{
 		NodesDown: monitor.NodesDownCriterion{
 			TotalDownNodesPart: *criterionNodesDownTotalPart,
@@ -123,6 +125,9 @@ func main() {
 		syscall.SIGINT,
 		syscall.SIGTERM,
 	)
+
+	zap.S().Info("sever successfully started")
+
 	sig := <-gracefulStop
 	zap.S().Infof("caught signal %q, stopping...", sig)
 	cancel()
