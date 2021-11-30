@@ -43,6 +43,10 @@ func init() {
 func main() {
 	zap.S().Info("starting server...")
 
+	if n := *network; n != "mainnet" && n != "testnet" && n != "stagenet" {
+		zap.S().Fatalf("invalid network %q")
+	}
+
 	criteria := monitor.NetworkErrorCriteria{
 		NodesDown: monitor.NodesDownCriterion{
 			TotalDownNodesPart: *criterionNodesDownTotalPart,
