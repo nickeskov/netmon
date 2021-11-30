@@ -32,12 +32,12 @@ type NetworkErrorCriteria struct {
 
 type netstatCalculator struct {
 	criteria             NetworkErrorCriteria
-	allNodes             NodesWithStats
-	workingNodes         NodesWithStats
-	workingNodesOnHeight map[int]NodesWithStats
+	allNodes             nodesWithStats
+	workingNodes         nodesWithStats
+	workingNodesOnHeight map[int]nodesWithStats
 }
 
-func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes NodesWithStats) (netstatCalculator, error) {
+func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes nodesWithStats) (netstatCalculator, error) {
 	if len(allNodes) == 0 {
 		return netstatCalculator{}, errors.New("nodes with stats are empty")
 	}

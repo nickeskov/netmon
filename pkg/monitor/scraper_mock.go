@@ -34,10 +34,10 @@ func (m *MockNodesStatsScrapper) EXPECT() *MockNodesStatsScrapperMockRecorder {
 }
 
 // ScrapeNodeStats mocks base method.
-func (m *MockNodesStatsScrapper) ScrapeNodeStats() (NodesWithStats, error) {
+func (m *MockNodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScrapeNodeStats")
-	ret0, _ := ret[0].(NodesWithStats)
+	ret0, _ := ret[0].(nodesWithStats)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

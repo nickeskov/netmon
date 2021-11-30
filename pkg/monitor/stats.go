@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// NodeStats is basic node statistics
-type NodeStats struct {
+// nodeStats is basic node statistics
+type nodeStats struct {
 	Height          int    `json:"height"`
 	StateHash       string `json:"statehash"`
 	StateHashHeight string `json:"statehash_height"`
@@ -15,22 +15,22 @@ type NodeStats struct {
 
 type nodeWithStats struct {
 	NodeDomain string `json:"_"`
-	NodeStats
+	nodeStats
 }
 
-type NodesWithStats []nodeWithStats
+type nodesWithStats []nodeWithStats
 
-func (n *NodesWithStats) UnmarshalJSON(bytes []byte) error {
-	var nodesStats map[string]NodeStats
+func (n *nodesWithStats) UnmarshalJSON(bytes []byte) error {
+	var nodesStats map[string]nodeStats
 	if err := json.Unmarshal(bytes, &nodesStats); err != nil {
 		return err
 	}
-	nodes := make(NodesWithStats, 0, len(nodesStats))
+	nodes := make(nodesWithStats, 0, len(nodesStats))
 
 	for domain, stats := range nodesStats {
 		node := nodeWithStats{
 			NodeDomain: domain,
-			NodeStats:  stats,
+			nodeStats:  stats,
 		}
 		nodes = append(nodes, node)
 	}
@@ -38,18 +38,8 @@ func (n *NodesWithStats) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func (n NodesWithStats) ForEach(fn func(node *nodeWithStats) error) error {
-	for i := range n {
-		node := &n[i]
-		if err := fn(node); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (n NodesWithStats) Filter(condition func(node *nodeWithStats) bool) NodesWithStats {
-	var nodes NodesWithStats
+func (n nodesWithStats) Filter(condition func(node *nodeWithStats) bool) nodesWithStats {
+	var nodes nodesWithStats
 	for _, node := range n {
 		if condition(&node) {
 			nodes = append(nodes, node)
@@ -58,42 +48,42 @@ func (n NodesWithStats) Filter(condition func(node *nodeWithStats) bool) NodesWi
 	return nodes
 }
 
-func (n NodesWithStats) NodesWithNetworkPrefix(networkPrefix string) NodesWithStats {
+func (n nodesWithStats) NodesWithNetworkPrefix(networkPrefix string) nodesWithStats {
 	return n.Filter(func(node *nodeWithStats) bool {
 		return strings.HasPrefix(node.NodeDomain, networkPrefix)
 	})
 }
 
-func (n NodesWithStats) WorkingNodes() NodesWithStats {
+func (n nodesWithStats) WorkingNodes() nodesWithStats {
 	return n.Filter(func(node *nodeWithStats) bool {
 		return node.Height > 0
 	})
 }
 
-func (n NodesWithStats) DownNodes() NodesWithStats {
+func (n nodesWithStats) DownNodes() nodesWithStats {
 	return n.Filter(func(node *nodeWithStats) bool {
 		return node.Height == -1
 	})
 }
 
-func (n NodesWithStats) SplitByHeight() map[int]NodesWithStats {
-	splitMap := make(map[int]NodesWithStats)
+func (n nodesWithStats) SplitByHeight() map[int]nodesWithStats {
+	splitMap := make(map[int]nodesWithStats)
 	for _, node := range n {
 		splitMap[node.Height] = append(splitMap[node.Height], node)
 	}
 	return splitMap
 }
 
-func (n NodesWithStats) SplitByVersion() map[string]NodesWithStats {
-	splitMap := make(map[string]NodesWithStats)
+func (n nodesWithStats) SplitByVersion() map[string]nodesWithStats {
+	splitMap := make(map[string]nodesWithStats)
 	for _, node := range n {
 		splitMap[node.Version] = append(splitMap[node.Version], node)
 	}
 	return splitMap
 }
 
-func (n NodesWithStats) SplitByStateHash() map[string]NodesWithStats {
-	splitMap := make(map[string]NodesWithStats)
+func (n nodesWithStats) SplitByStateHash() map[string]nodesWithStats {
+	splitMap := make(map[string]nodesWithStats)
 	for _, node := range n {
 		splitMap[node.StateHash] = append(splitMap[node.StateHash], node)
 	}
