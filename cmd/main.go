@@ -18,7 +18,7 @@ import (
 
 var (
 	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: DEV, DEBUG, INFO, WARN, ERROR, FATAL. Default logging level INFO.")
-	bindAddr               = flag.String("bind-addr", ":8080", "Local network address to bind the HTTP API of the service on. Default value is ':8080'.")
+	bindAddr               = flag.String("bind-addr", ":2048", "Local network address to bind the HTTP API of the service on. Default value is ':8080'.")
 	network                = flag.String("network", "mainnet", "WAVES network type. Supported values: mainnet, testnet, stagenet.")
 	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval. Default value 1m.")
