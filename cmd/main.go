@@ -58,6 +58,9 @@ func main() {
 			RequireMinNodesOnHeight:          *criterionNodesStateHashRequireMinNodesOnHeight,
 		},
 	}
+	if err := criteria.Validate(); err != nil {
+		zap.S().Fatalf("invalid criteria: %v", err)
+	}
 
 	mon, err := monitor.NewNetworkMonitoring(
 		*network,

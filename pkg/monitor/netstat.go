@@ -12,9 +12,26 @@ type NodesDownCriterion struct {
 	TotalDownNodesPart float64
 }
 
+func (c *NodesDownCriterion) Validate() error {
+	if c.TotalDownNodesPart <= 0 || c.TotalDownNodesPart >= 1 {
+		return errors.Errorf("NodesDownCriterion.TotalDownNodesPart value should be 0.0 < n < 1.0")
+	}
+	return nil
+}
+
 type NodesHeightCriterion struct {
 	HeightDiff              int // TODO: check version
 	RequireMinNodesOnHeight int // minimum required count of nodes on the same height to activate this criterion
+}
+
+func (c *NodesHeightCriterion) Validate() error {
+	if c.HeightDiff <= 0 {
+		return errors.Errorf("NodesHeightCriterion.HeightDiff value should be greater than zero")
+	}
+	if c.RequireMinNodesOnHeight <= 0 {
+		return errors.Errorf("NodesHeightCriterion.RequireMinNodesOnHeight value should be greater than zero")
+	}
+	return nil
 }
 
 type NodesStateHashCriterion struct {
@@ -24,10 +41,39 @@ type NodesStateHashCriterion struct {
 	RequireMinNodesOnHeight          int // minimum required count of nodes on the same height to activate this criterion
 }
 
+func (c *NodesStateHashCriterion) Validate() error {
+	if c.MinStateHashGroupsOnSameHeight <= 0 {
+		return errors.Errorf("NodesStateHashCriterion.MinStateHashGroupsOnSameHeight value should be greater than zero")
+	}
+	if c.MinValuableStateHashGroups <= 0 {
+		return errors.Errorf("NodesStateHashCriterion.MinValuableStateHashGroups value should be greater than zero")
+	}
+	if c.MinNodesInValuableStateHashGroup <= 0 {
+		return errors.Errorf("NodesStateHashCriterion.MinNodesInValuableStateHashGroup value should be greater than zero")
+	}
+	if c.RequireMinNodesOnHeight <= 0 {
+		return errors.Errorf("NodesStateHashCriterion.RequireMinNodesOnHeight value should be greater than zero")
+	}
+	return nil
+}
+
 type NetworkErrorCriteria struct {
 	NodesDown   NodesDownCriterion
 	NodesHeight NodesHeightCriterion
 	StateHash   NodesStateHashCriterion
+}
+
+func (c *NetworkErrorCriteria) Validate() error {
+	if err := c.NodesDown.Validate(); err != nil {
+		return err
+	}
+	if err := c.NodesHeight.Validate(); err != nil {
+		return err
+	}
+	if err := c.StateHash.Validate(); err != nil {
+		return err
+	}
+	return nil
 }
 
 type netstatCalculator struct {
