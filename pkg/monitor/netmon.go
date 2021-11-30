@@ -27,7 +27,7 @@ func NewNetworkMonitoringStateFromString(state string) (NetworkMonitoringState, 
 	case "frozen_degraded":
 		return StateFrozenNetworkDegraded, nil
 	default:
-		return 0, errors.Errorf("failed parse network monitoring state from string: invalid state string %q", state)
+		return 0, errors.Errorf("failed parse network monitoring state from string, invalid state string %q", state)
 	}
 }
 
