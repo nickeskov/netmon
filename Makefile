@@ -23,7 +23,7 @@ build:
 	go build -o build/netmon ./cmd/
 
 gotest:
-	go test -cover ./...
+	go test -cover -race -covermode=atomic ./...
 
 mod-clean:
 	go mod tidy
