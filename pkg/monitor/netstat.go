@@ -77,6 +77,7 @@ func (c *NetworkErrorCriteria) Validate() error {
 type netstatCalculator struct {
 	criteria             NetworkErrorCriteria
 	allNodes             nodesWithStats
+	downNodes            nodesWithStats
 	workingNodes         nodesWithStats
 	workingNodesOnHeight map[int]nodesWithStats
 }
@@ -89,14 +90,14 @@ func newNetstatCalculator(criteria NetworkErrorCriteria, allNodes nodesWithStats
 	return netstatCalculator{
 		criteria:             criteria,
 		allNodes:             allNodes,
+		downNodes:            allNodes.DownNodes(),
 		workingNodes:         workingNodes,
 		workingNodesOnHeight: workingNodes.SplitByHeight(),
 	}, nil
 }
 
 func (n *netstatCalculator) AlertDownNodesCriterion() bool {
-	downNodes := n.allNodes.DownNodes()
-	totalDownPart := float64(len(downNodes)) / float64(len(n.allNodes))
+	totalDownPart := float64(len(n.downNodes)) / float64(len(n.allNodes))
 	return totalDownPart >= n.criteria.NodesDown.TotalDownNodesPart
 }
 
