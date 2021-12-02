@@ -23,6 +23,7 @@ var (
 	network                = flag.String("network", "mainnet", "WAVES network type. Supported networks: 'mainnet', 'testnet', 'stagenet'.")
 	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval.")
+	statsHistorySize       = flag.Int("stats-history-size", 10, "Exact amount of latest nodes stats that will be kept.")
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
 	initialMonState        = flag.String("initial-mon-state", "active", "Initial monitoring state. Possible states: 'active', 'frozen_operates_stable', 'frozen_degraded'.")
 
@@ -51,6 +52,9 @@ func main() {
 	// basic validations
 	if n := *network; n != "mainnet" && n != "testnet" && n != "stagenet" {
 		zap.S().Fatalf("invalid network %q", n)
+	}
+	if *statsHistorySize < 1 {
+		zap.S().Fatal("'stats-history-size' parameter should be greater than zero")
 	}
 	initialState, err := monitor.NewNetworkMonitoringStateFromString(*initialMonState)
 	if err != nil {
@@ -85,6 +89,7 @@ func main() {
 	mon, err := monitor.NewNetworkMonitoring(
 		initialState,
 		*network,
+		*statsHistorySize,
 		monitor.NewNodesStatsScraperHTTP(*nodeStatsURL),
 		*networkErrorsStreak,
 		criteria,

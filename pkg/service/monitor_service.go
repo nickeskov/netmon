@@ -24,11 +24,8 @@ func (s *NetworkMonitoringService) NetworkHealth(w http.ResponseWriter, r *http.
 		return
 	}
 
-	type statusResponse struct {
-		Status bool `json:"status"`
-	}
 	w.Header().Set("content-type", "application/json")
-	if err := json.NewEncoder(w).Encode(statusResponse{Status: s.monitor.NetworkOperatesStable()}); err != nil {
+	if err := json.NewEncoder(w).Encode(s.monitor.NetworkStatusInfo()); err != nil {
 		zap.S().Errorf("failed to marshal status response struct: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}

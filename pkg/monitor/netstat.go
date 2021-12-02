@@ -154,3 +154,15 @@ func (n *netstatCalculator) AlertStateHashCriterion() bool {
 	}
 	return false
 }
+
+// CurrentMaxHeight returns current max height for chosen network.
+// If all nodes are down return (-1).
+func (n *netstatCalculator) CurrentMaxHeight() int {
+	maxHeight := -1
+	for height := range n.workingNodesOnHeight {
+		if height > maxHeight {
+			maxHeight = height
+		}
+	}
+	return maxHeight
+}
