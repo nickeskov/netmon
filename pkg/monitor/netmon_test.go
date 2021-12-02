@@ -66,9 +66,16 @@ func TestNetworkMonitor_ChangeState(t *testing.T) {
 	mon.networkErrorStreak = 10
 	mon.ChangeState(StateActive)
 	require.Equal(t, 10, mon.networkErrorStreak)
+	require.Equal(t, StateActive, mon.State())
 
 	mon.ChangeState(StateFrozenNetworkDegraded)
 	require.Equal(t, 0, mon.networkErrorStreak)
+	require.Equal(t, StateFrozenNetworkDegraded, mon.State())
+
+	mon.networkErrorStreak = 10
+	mon.ChangeState(StateFrozenNetworkOperatesStable)
+	require.Equal(t, 0, mon.networkErrorStreak)
+	require.Equal(t, StateFrozenNetworkOperatesStable, mon.State())
 }
 
 func TestNetworkMonitor_NetworkOperatesStable(t *testing.T) {
