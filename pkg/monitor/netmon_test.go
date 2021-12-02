@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -148,5 +149,37 @@ func TestNetworkMonitor_NetworkStatusInfo(t *testing.T) {
 		}
 		actual := mon.NetworkStatusInfo()
 		require.Equal(t, expected, actual, "failed testcase #%d", i)
+	}
+}
+
+func TestNetworkMonitoringState(t *testing.T) {
+	tests := []struct {
+		state NetworkMonitoringState
+		ok    bool
+		str   string
+	}{
+		{StateActive, true, "active"},
+		{StateFrozenNetworkOperatesStable, true, "frozen_operates_stable"},
+		{StateFrozenNetworkDegraded, true, "frozen_degraded"},
+		{NetworkMonitoringState(0), false, "unknown state (0)"},
+		{StateFrozenNetworkDegraded + 1, false, fmt.Sprintf("unknown state (%d)", StateFrozenNetworkDegraded+1)},
+	}
+	for _, tc := range tests {
+		if tc.ok {
+			err := tc.state.Validate()
+			if tc.ok {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+			require.Equal(t, tc.str, tc.state.String())
+			parsedState, err := NewNetworkMonitoringStateFromString(tc.str)
+			if tc.ok {
+				require.NoError(t, err)
+				require.Equal(t, tc.state, parsedState)
+			} else {
+				require.Error(t, err)
+			}
+		}
 	}
 }

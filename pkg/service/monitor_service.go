@@ -9,10 +9,10 @@ import (
 )
 
 type NetworkMonitoringService struct {
-	monitor *monitor.NetworkMonitor
+	monitor monitor.Monitor
 }
 
-func NewNetworkMonitoringService(monitor *monitor.NetworkMonitor) NetworkMonitoringService {
+func NewNetworkMonitoringService(monitor monitor.Monitor) NetworkMonitoringService {
 	return NetworkMonitoringService{
 		monitor: monitor,
 	}

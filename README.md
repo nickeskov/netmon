@@ -75,7 +75,7 @@
 
     - Возможные HTTP коды ответа:
         - _200 OK_
-        - _409 Method Not Allowed_
+        - _405 Method Not Allowed_
         - _500 Internal Server Error_
     - Возвращаемый результат:
         - `{"updated":"2021-12-02T19:35:24.144994Z","status":true,"height":2882018}` - сеть в порядке
@@ -94,7 +94,7 @@
         - _200 OK_
         - _400 Bad Request_
         - _403 Forbidden_
-        - _409 Method Not Allowed_
+        - _405 Method Not Allowed_
         - _500 Internal Server Error_
     - Возвращаемый результат: отсутствует
     - Возможные значения тела запроса:

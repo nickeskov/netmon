@@ -31,3 +31,4 @@ mod-clean:
 
 mock:
 	@mockgen -source=pkg/monitor/scraper.go -destination=pkg/monitor/scraper_mock.go -package=monitor
+	@mockgen -source=pkg/monitor/netmon.go -destination=pkg/monitor/netmon_mock.go -package=monitor

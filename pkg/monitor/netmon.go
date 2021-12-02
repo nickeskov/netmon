@@ -68,6 +68,14 @@ type NetworkStatusInfo struct {
 	Height  int       `json:"height"`
 }
 
+type Monitor interface {
+	CheckNodes(now time.Time) error
+	NetworkStatusInfo() NetworkStatusInfo
+	NetworkOperatesStable() bool
+	State() NetworkMonitoringState
+	ChangeState(state NetworkMonitoringState)
+}
+
 type NetworkMonitor struct {
 	mu sync.RWMutex
 

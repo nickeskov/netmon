@@ -40,4 +40,7 @@ func TestStatsHistoryDeque(t *testing.T) {
 	d.Clear()
 	require.Equal(t, d.Len(), 0)
 
+	require.Panics(t, func() {
+		d.PushFront(nil)
+	})
 }

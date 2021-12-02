@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -73,9 +72,8 @@ func TestNodesStatsScrapper_ScrapeNodeStats(t *testing.T) {
 	})
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		trimmedJson := strings.ReplaceAll(nodesJson, "\t", "")
-		_, err := writer.Write([]byte(trimmedJson))
+	mux.HandleFunc("/", func(w http.ResponseWriter, f *http.Request) {
+		_, err := w.Write([]byte(nodesJson))
 		require.NoError(t, err)
 	})
 	srv := httptest.NewServer(mux)
@@ -89,4 +87,31 @@ func TestNodesStatsScrapper_ScrapeNodeStats(t *testing.T) {
 	})
 
 	require.Equal(t, expected, actual)
+}
+
+func TestNodesStatsScrapper_ScrapeNodeStats_InvalidJSON(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("{corruptedData"))
+		require.NoError(t, err)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	scraper := NewNodesStatsScraperHTTP(srv.URL)
+	_, err := scraper.ScrapeNodeStats()
+	require.Error(t, err)
+}
+
+func TestNodesStatsScrapper_ScrapeNodeStats_InvalidHTTPCode(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	scraper := NewNodesStatsScraperHTTP(srv.URL)
+	_, err := scraper.ScrapeNodeStats()
+	require.Error(t, err)
 }
