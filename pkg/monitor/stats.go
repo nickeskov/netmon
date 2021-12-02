@@ -9,7 +9,7 @@ type nodeStats struct {
 	NetByte         NetworkSchemeChar `json:"netbyte"`
 	Height          int               `json:"height"`
 	StateHash       string            `json:"statehash"`
-	StateHashHeight string            `json:"statehash_height"`
+	StateHashHeight int               `json:"statehash_height"`
 	Version         string            `json:"version"`
 }
 
