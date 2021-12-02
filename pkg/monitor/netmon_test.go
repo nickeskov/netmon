@@ -15,16 +15,16 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 	scraperMock := NewMockNodesStatsScrapper(ctrl)
 	scraperMock.EXPECT().ScrapeNodeStats().Times(1).Return(
 		nodesWithStats{
-			{nodeStats: nodeStats{Height: 11}},
-			{nodeStats: nodeStats{Height: 11}},
-			{nodeStats: nodeStats{Height: -1}},
+			{nodeStats: nodeStats{Height: 11, NetByte: MainNetSchemeChar}},
+			{nodeStats: nodeStats{Height: 11, NetByte: MainNetSchemeChar}},
+			{nodeStats: nodeStats{Height: -1, NetByte: MainNetSchemeChar}},
 		},
 		nil,
 	)
 
 	mon, err := NewNetworkMonitoring(
 		StateActive,
-		"",
+		MainNetSchemeChar,
 		10,
 		scraperMock,
 		1,
@@ -53,7 +53,7 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 func TestNetworkMonitor_ChangeState(t *testing.T) {
 	mon, err := NewNetworkMonitoring(
 		StateActive,
-		"",
+		MainNetSchemeChar,
 		10,
 		nil,
 		5,
@@ -94,7 +94,7 @@ func TestNetworkMonitor_NetworkOperatesStable(t *testing.T) {
 	for i, tc := range tests {
 		mon, err := NewNetworkMonitoring(
 			tc.state,
-			"",
+			MainNetSchemeChar,
 			10,
 			nil,
 			5,
@@ -120,7 +120,7 @@ func TestNetworkMonitor_NetworkStatusInfo(t *testing.T) {
 	for i, tc := range tests {
 		mon, err := NewNetworkMonitoring(
 			StateActive,
-			"",
+			MainNetSchemeChar,
 			10,
 			nil,
 			5,

@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -13,6 +14,20 @@ type statsDataSnapshot struct {
 	nodesDownCriterion   bool
 	heightCriterion      bool
 	stateHashCriterion   bool
+}
+
+func (s *statsDataSnapshot) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf(
+		"(snapshotCreationTime: %s, maxHeight: %d, nodesDownCriterion: %t, heightCriterion: %t, stateHashCriterion: %t)",
+		s.snapshotCreationTime,
+		s.maxHeight,
+		s.nodesDownCriterion,
+		s.heightCriterion,
+		s.stateHashCriterion,
+	)
 }
 
 type statsHistoryDeque struct {

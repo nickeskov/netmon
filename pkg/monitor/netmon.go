@@ -11,6 +11,15 @@ import (
 )
 
 const (
+	MainNetSchemeChar   NetworkSchemeChar = "W"
+	TestNetSchemeChar   NetworkSchemeChar = "T"
+	StageNetSchemeChar  NetworkSchemeChar = "S"
+	CustomNetSchemeChar NetworkSchemeChar = "E"
+)
+
+type NetworkSchemeChar string
+
+const (
 	StateActive NetworkMonitoringState = iota + 1
 	StateFrozenNetworkOperatesStable
 	StateFrozenNetworkDegraded
@@ -62,7 +71,7 @@ type NetworkStatusInfo struct {
 type NetworkMonitor struct {
 	mu sync.RWMutex
 
-	networkPrefix string
+	netSchemeChar NetworkSchemeChar
 	scrapper      NodesStatsScrapper
 
 	// state fields
@@ -76,8 +85,8 @@ type NetworkMonitor struct {
 }
 
 func NewNetworkMonitoring(
-	initialState NetworkMonitoringState,
-	networkPrefix string,
+	initialMonitorState NetworkMonitoringState,
+	netSchemeChar NetworkSchemeChar,
 	maxStatsHistoryLen int,
 	nodesStatsScraper NodesStatsScrapper,
 	alertOnNetworkErrorStreak int,
@@ -89,12 +98,15 @@ func NewNetworkMonitoring(
 	if alertOnNetworkErrorStreak < 1 {
 		return NetworkMonitor{}, errors.New("alertOnNetworkErrorStreak should be greater than zero")
 	}
-	if err := initialState.Validate(); err != nil {
-		return NetworkMonitor{}, err
+	switch netSchemeChar {
+	case MainNetSchemeChar, TestNetSchemeChar, StageNetSchemeChar, CustomNetSchemeChar:
+		// ok
+	default:
+		return NetworkMonitor{}, errors.Errorf("invalid network scheme byte %q", netSchemeChar)
 	}
 	return NetworkMonitor{
-		monitorState:              initialState,
-		networkPrefix:             networkPrefix,
+		monitorState:              initialMonitorState,
+		netSchemeChar:             netSchemeChar,
 		scrapper:                  nodesStatsScraper,
 		statsHistory:              newStatsDeque(maxStatsHistoryLen),
 		alertOnNetworkErrorStreak: alertOnNetworkErrorStreak,
@@ -121,13 +133,13 @@ func (m *NetworkMonitor) CheckNodes(now time.Time) error {
 		return nil
 	}
 
-	currentNetworkNodes := allNetworksNodes.NodesWithNetworkPrefix(m.networkPrefix)
+	currentNetworkNodes := allNetworksNodes.NodesWithNetworkSchemeChar(m.netSchemeChar)
 	calc, err := newNetstatCalculator(m.criteria, currentNetworkNodes)
 	if err != nil {
 		return err
 	}
 
-	statsSnapshot := &statsDataSnapshot{
+	newStatsSnapshot := &statsDataSnapshot{
 		snapshotCreationTime: now,
 		nodes:                currentNetworkNodes,
 		maxHeight:            calc.CurrentMaxHeight(),
@@ -135,15 +147,17 @@ func (m *NetworkMonitor) CheckNodes(now time.Time) error {
 		heightCriterion:      calc.AlertHeightCriterion(),
 		stateHashCriterion:   calc.AlertStateHashCriterion(),
 	}
-	m.statsHistory.PushFront(statsSnapshot)
+	outdatedStats := m.statsHistory.PushFront(newStatsSnapshot)
+	zap.S().Debugf("FRESH stats has been pushed to stats history storage, stats=%q", newStatsSnapshot.String())
+	zap.S().Debugf("OUTDATED stats has been dropped from stats history storage, stats=%q", outdatedStats.String())
 
-	if statsSnapshot.nodesDownCriterion || statsSnapshot.heightCriterion || statsSnapshot.stateHashCriterion {
-		zap.S().Debugf("network %q error has been detected, increasing networkErrorStreak counter", m.networkPrefix)
+	if newStatsSnapshot.nodesDownCriterion || newStatsSnapshot.heightCriterion || newStatsSnapshot.stateHashCriterion {
+		zap.S().Debugf("network %q error has been detected, increasing networkErrorStreak counter", m.netSchemeChar)
 		// increment error streak counter
 		m.networkErrorStreak++
 	} else {
 		// all ok - reset streak
-		zap.S().Debugf("network %q operates normally and alert hasn't been generated", m.networkPrefix)
+		zap.S().Debugf("network %q operates normally and alert hasn't been generated", m.netSchemeChar)
 		m.networkErrorStreak = 0
 	}
 	return nil

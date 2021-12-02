@@ -2,15 +2,15 @@ package monitor
 
 import (
 	"encoding/json"
-	"strings"
 )
 
 // nodeStats is basic node statistics
 type nodeStats struct {
-	Height          int    `json:"height"`
-	StateHash       string `json:"statehash"`
-	StateHashHeight string `json:"statehash_height"`
-	Version         string `json:"version"`
+	NetByte         NetworkSchemeChar `json:"netbyte"`
+	Height          int               `json:"height"`
+	StateHash       string            `json:"statehash"`
+	StateHashHeight string            `json:"statehash_height"`
+	Version         string            `json:"version"`
 }
 
 type nodeWithStats struct {
@@ -48,9 +48,9 @@ func (n nodesWithStats) Filter(condition func(node *nodeWithStats) bool) nodesWi
 	return nodes
 }
 
-func (n nodesWithStats) NodesWithNetworkPrefix(networkPrefix string) nodesWithStats {
+func (n nodesWithStats) NodesWithNetworkSchemeChar(netSchemeChar NetworkSchemeChar) nodesWithStats {
 	return n.Filter(func(node *nodeWithStats) bool {
-		return strings.HasPrefix(node.NodeDomain, networkPrefix)
+		return node.NetByte == netSchemeChar
 	})
 }
 

@@ -20,7 +20,7 @@ import (
 var (
 	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: 'DEV', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'.")
 	bindAddr               = flag.String("bind-addr", ":2048", "Local network address to bind the HTTP API of the service on.")
-	network                = flag.String("network", "mainnet", "WAVES network type. Supported networks: 'mainnet', 'testnet', 'stagenet'.")
+	networkScheme          = flag.String("network-scheme", "W", "WAVES network scheme character. Supported networks: 'W' (mainnet), 'T' (testnet), 'S' (stagenet).")
 	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval.")
 	statsHistorySize       = flag.Int("stats-history-size", 10, "Exact amount of latest nodes stats that will be kept.")
@@ -50,15 +50,12 @@ func main() {
 	zap.S().Info("starting server...")
 
 	// basic validations
-	if n := *network; n != "mainnet" && n != "testnet" && n != "stagenet" {
-		zap.S().Fatalf("invalid network %q", n)
-	}
 	if *statsHistorySize < 1 {
 		zap.S().Fatal("'stats-history-size' parameter should be greater than zero")
 	}
 	initialState, err := monitor.NewNetworkMonitoringStateFromString(*initialMonState)
 	if err != nil {
-		zap.S().Fatalf("invalid monitoring initial state %q", initialState)
+		zap.S().Fatalf("invalid monitoring initial state %q", initialState.String())
 	}
 	if *httpAuthHeader == "" {
 		zap.S().Fatal("please, provide non empty 'http-auth-header' parameter")
@@ -88,7 +85,7 @@ func main() {
 
 	mon, err := monitor.NewNetworkMonitoring(
 		initialState,
-		*network,
+		monitor.NetworkSchemeChar(*networkScheme),
 		*statsHistorySize,
 		monitor.NewNodesStatsScraperHTTP(*nodeStatsURL),
 		*networkErrorsStreak,
@@ -162,7 +159,7 @@ func main() {
 	zap.S().Info("sever successfully started")
 
 	sig := <-gracefulStop
-	zap.S().Infof("caught signal %q, stopping...", sig)
+	zap.S().Infof("caught signal %q, stopping...", sig.String())
 	cancel()
 	if err := <-httpDone; err != nil {
 		zap.S().Fatalf("HTTP server error: %v", err)
