@@ -12,6 +12,7 @@ import (
 	"github.com/nickeskov/netmon/pkg/common"
 	"github.com/nickeskov/netmon/pkg/monitor"
 	"github.com/nickeskov/netmon/pkg/service"
+	"github.com/nickeskov/netmon/pkg/service/middleware"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -24,6 +25,9 @@ var (
 	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval.")
 	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
 	initialMonState        = flag.String("initial-mon-state", "active", "Initial monitoring state. Possible states: 'active', 'frozen_operates_stable', 'frozen_degraded'.")
+
+	httpAuthHeader = flag.String("http-auth-header", "X-Waves-Monitor-Auth", "HTTP header which will be used for private routes authentication.")
+	httpAuthToken  = flag.String("http-auth-token", "", "HTTP auth token which will be used for private routes authentication.")
 
 	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "Alert will be generated if detected down nodes part greater than that criterion.")
 
@@ -44,13 +48,19 @@ func init() {
 func main() {
 	zap.S().Info("starting server...")
 
+	// basic validations
 	if n := *network; n != "mainnet" && n != "testnet" && n != "stagenet" {
 		zap.S().Fatalf("invalid network %q", n)
 	}
-
 	initialState, err := monitor.NewNetworkMonitoringStateFromString(*initialMonState)
 	if err != nil {
 		zap.S().Fatalf("invalid monitoring initial state %q", initialState)
+	}
+	if *httpAuthHeader == "" {
+		zap.S().Fatal("please, provide non empty 'http-auth-header' parameter")
+	}
+	if *httpAuthToken == "" {
+		zap.S().Fatal("please, provide 'http-auth-token' parameter")
 	}
 
 	criteria := monitor.NetworkErrorCriteria{
@@ -103,6 +113,14 @@ func main() {
 		}()
 
 		monitoringService := service.NewNetworkMonitoringService(&mon)
+		authMiddleWare := middleware.NewHTTPAuthTokenMiddleware(*httpAuthHeader, *httpAuthToken)
+
+		// public URLs
+		http.HandleFunc("/health", monitoringService.NetworkHealth)
+		// private URLs
+		http.Handle("/state", authMiddleWare(http.HandlerFunc(monitoringService.SetMonitorState)))
+
+		// run monitor service
 		monitorDone := mon.RunInBackground(ctx, *pollNodesStatsInterval)
 
 		server := http.Server{Addr: *bindAddr, Handler: nil}
@@ -110,10 +128,6 @@ func main() {
 			// wait for monitor
 			<-monitorDone
 		})
-
-		http.HandleFunc("/health", monitoringService.NetworkHealth)
-		// TODO: protect this by AUTH middleware
-		http.HandleFunc("/state", monitoringService.SetMonitorState)
 
 		// run graceful HTTP shutdown worker
 		go func() {

@@ -6,8 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO: add criteria validation
-
 type NodesDownCriterion struct {
 	TotalDownNodesPart float64
 }
@@ -20,7 +18,7 @@ func (c *NodesDownCriterion) Validate() error {
 }
 
 type NodesHeightCriterion struct {
-	HeightDiff              int // TODO: check version
+	HeightDiff              int
 	RequireMinNodesOnHeight int // minimum required count of nodes on the same height to activate this criterion
 }
 

@@ -26,6 +26,9 @@
   состоянии. По умолчанию _5_.
 - _--initial-mon-state_ - состояние мониторинга при старте. Возможные значения: _active_, _frozen_operates_stable_, _
   frozen_degraded_. По умолчанию _active_.
+- _--http-auth-header_ - HTTP заголовок, в котором будет проверяться наличие токена для доступа к приватным URL. По
+  умолчанию _X-Waves-Monitor-Auth_.
+- _--http-auth-token_ - токен доступа к приватным URL. **ОБЯЗАТЕЛЬНЫЙ** параметр. Значение по умолчанию отсутствует.
 
 ## Monitoring criteria
 
