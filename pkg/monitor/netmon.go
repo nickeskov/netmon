@@ -63,9 +63,10 @@ func (s NetworkMonitoringState) String() string {
 }
 
 type NetworkStatusInfo struct {
-	Updated time.Time `json:"updated,omitempty"`
-	Status  bool      `json:"status"`
-	Height  int       `json:"height"`
+	Updated time.Time         `json:"updated,omitempty"`
+	Network NetworkSchemeChar `json:"network"`
+	Status  bool              `json:"status"`
+	Height  int               `json:"height"`
 }
 
 type Monitor interface {
@@ -176,8 +177,9 @@ func (m *NetworkMonitor) NetworkStatusInfo() NetworkStatusInfo {
 	defer m.mu.RUnlock()
 
 	statusInfo := NetworkStatusInfo{
-		Status: m.unsafeNetworkOperatesStable(),
-		Height: -1,
+		Status:  m.unsafeNetworkOperatesStable(),
+		Network: m.netSchemeChar,
+		Height:  -1,
 	}
 	if m.statsHistory.Len() != 0 {
 		front := m.statsHistory.Front()

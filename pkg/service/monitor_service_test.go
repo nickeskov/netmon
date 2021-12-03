@@ -31,6 +31,7 @@ func TestNetworkMonitoringService_NetworkHealth(t *testing.T) {
 			mockCallTimes:  1,
 			statusInfo: monitor.NetworkStatusInfo{
 				Updated: now,
+				Network: monitor.MainNetSchemeChar,
 				Status:  true,
 				Height:  12345,
 			},
@@ -40,11 +41,6 @@ func TestNetworkMonitoringService_NetworkHealth(t *testing.T) {
 			httpMethod:     http.MethodPost,
 			httpStatusCode: http.StatusMethodNotAllowed,
 			mockCallTimes:  0,
-			statusInfo: monitor.NetworkStatusInfo{
-				Updated: now,
-				Status:  true,
-				Height:  12345,
-			},
 		},
 	}
 	for _, tc := range tests {

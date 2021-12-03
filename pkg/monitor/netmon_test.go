@@ -45,6 +45,7 @@ func TestNetworkMonitor_CheckNodes(t *testing.T) {
 
 	expectedInfo := NetworkStatusInfo{
 		Updated: now,
+		Network: MainNetSchemeChar,
 		Status:  false,
 		Height:  11,
 	}
@@ -119,16 +120,17 @@ func TestNetworkMonitor_NetworkStatusInfo(t *testing.T) {
 		networkErrorStreak int
 		operatesStable     bool
 		height             int
+		network            NetworkSchemeChar
 	}{
-		{6, false, 10},
-		{5, false, 20},
-		{4, true, 30},
+		{6, false, 10, MainNetSchemeChar},
+		{5, false, 20, TestNetSchemeChar},
+		{4, true, 30, StageNetSchemeChar},
 	}
 
 	for i, tc := range tests {
 		mon, err := NewNetworkMonitoring(
 			StateActive,
-			MainNetSchemeChar,
+			tc.network,
 			10,
 			nil,
 			5,
@@ -144,6 +146,7 @@ func TestNetworkMonitor_NetworkStatusInfo(t *testing.T) {
 
 		expected := NetworkStatusInfo{
 			Updated: now,
+			Network: tc.network,
 			Status:  tc.operatesStable,
 			Height:  tc.height,
 		}
