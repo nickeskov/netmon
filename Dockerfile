@@ -27,4 +27,4 @@ USER $APP_USER
 EXPOSE 2048
 WORKDIR ${APP}
 COPY --from=builder /app/build/netmon netmon
-CMD ["./netmon"]
+ENTRYPOINT ["./netmon"]
