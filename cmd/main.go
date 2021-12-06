@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/nickeskov/netmon/pkg/common"
 	"github.com/nickeskov/netmon/pkg/monitor"
@@ -17,66 +16,48 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	logLevel               = flag.String("log-level", "INFO", "Logging level. Supported levels: 'DEV', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'.")
-	bindAddr               = flag.String("bind-addr", ":2048", "Local network address to bind the HTTP API of the service on.")
-	networkScheme          = flag.String("network-scheme", "W", "WAVES network scheme character. Supported networks: 'W' (mainnet), 'T' (testnet), 'S' (stagenet).")
-	nodeStatsURL           = flag.String("stats-url", "https://waves-nodes-get-height.wavesnodes.com/", "Nodes statistics URL.")
-	pollNodesStatsInterval = flag.Duration("stats-poll-interval", time.Minute, "Nodes statistics polling interval.")
-	statsHistorySize       = flag.Int("stats-history-size", 10, "Exact amount of latest nodes stats that will be kept.")
-	networkErrorsStreak    = flag.Int("network-errors-streak", 5, "Network will be considered as degraded after that errors streak.")
-	initialMonState        = flag.String("initial-mon-state", "active", "Initial monitoring state. Possible states: 'active', 'frozen_operates_stable', 'frozen_degraded'.")
-
-	httpAuthHeader = flag.String("http-auth-header", "X-Waves-Monitor-Auth", "HTTP header which will be used for private routes authentication.")
-	httpAuthToken  = flag.String("http-auth-token", "", "HTTP auth token which will be used for private routes authentication.")
-
-	criterionNodesDownTotalPart = flag.Float64("criterion-down-total-part", 0.3, "Alert will be generated if detected down nodes part greater than that criterion.")
-
-	criterionNodesHeightDiff                    = flag.Int("criterion-height-diff", 5, "Alert will be generated if detected height diff greater than that criterion.")
-	criterionNodesHeightRequireMinNodesOnHeight = flag.Int("criterion-height-require-min-nodes-on-same-height", 2, "Minimum required amount of nodes on same height for height-diff criterion.")
-
-	criterionNodesStateHashMinStateHashGroupsOnSameHeight   = flag.Int("criterion-statehash-min-groups-on-same-height", 2, "Alert won't be generated if detected amount of statehash groups on same height lower than that criterion.")
-	criterionNodesStateHashMinValuableStateHashGroups       = flag.Int("criterion-statehash-min-valuable-groups", 2, "Alert won't be generated if detected amount of statehash 'valuable' groups on same height lower than that criterion.")
-	criterionNodesStateHashMinNodesInValuableStateHashGroup = flag.Int("criterion-statehash-min-nodes-in-valuable-group", 2, "StateHash group will be considered as 'valuable' if contains 'criterion-statehash-min-valuable-groups'.")
-	criterionNodesStateHashRequireMinNodesOnHeight          = flag.Int("criterion-statehash-require-min-nodes-on-same-height", 4, "Minimum required amount of nodes on same height for statehash criterion.")
-)
+var config = appConfig{}
 
 func init() {
+	// setup logger for config parsing
+	_, s := common.SetupLogger("INFO")
+	config.parseENVAndRegisterCLI(s)
 	flag.Parse()
-	_, _ = common.SetupLogger(*logLevel)
+	// setup logger again for further usage
+	_, _ = common.SetupLogger(config.logLevel)
 }
 
 func main() {
 	zap.S().Info("starting server...")
 
 	// basic validations
-	if *statsHistorySize < 1 {
+	if config.statsHistorySize < 1 {
 		zap.S().Fatal("'stats-history-size' parameter should be greater than zero")
 	}
-	initialState, err := monitor.NewNetworkMonitoringStateFromString(*initialMonState)
+	initialState, err := monitor.NewNetworkMonitoringStateFromString(config.initialMonState)
 	if err != nil {
 		zap.S().Fatalf("invalid monitoring initial state %q", initialState.String())
 	}
-	if *httpAuthHeader == "" {
+	if config.httpAuthHeader == "" {
 		zap.S().Fatal("please, provide non empty 'http-auth-header' parameter")
 	}
-	if *httpAuthToken == "" {
+	if config.httpAuthToken == "" {
 		zap.S().Fatal("please, provide 'http-auth-token' parameter")
 	}
 
 	criteria := monitor.NetworkErrorCriteria{
 		NodesDown: monitor.NodesDownCriterion{
-			TotalDownNodesPart: *criterionNodesDownTotalPart,
+			TotalDownNodesPart: config.criterionNodesDownTotalPart,
 		},
 		NodesHeight: monitor.NodesHeightCriterion{
-			HeightDiff:              *criterionNodesHeightDiff,
-			RequireMinNodesOnHeight: *criterionNodesHeightRequireMinNodesOnHeight,
+			HeightDiff:              config.criterionNodesHeightDiff,
+			RequireMinNodesOnHeight: config.criterionNodesHeightRequireMinNodesOnHeight,
 		},
 		StateHash: monitor.NodesStateHashCriterion{
-			MinStateHashGroupsOnSameHeight:   *criterionNodesStateHashMinStateHashGroupsOnSameHeight,
-			MinValuableStateHashGroups:       *criterionNodesStateHashMinValuableStateHashGroups,
-			MinNodesInValuableStateHashGroup: *criterionNodesStateHashMinNodesInValuableStateHashGroup,
-			RequireMinNodesOnHeight:          *criterionNodesStateHashRequireMinNodesOnHeight,
+			MinStateHashGroupsOnSameHeight:   config.criterionNodesStateHashMinStateHashGroupsOnSameHeight,
+			MinValuableStateHashGroups:       config.criterionNodesStateHashMinValuableStateHashGroups,
+			MinNodesInValuableStateHashGroup: config.criterionNodesStateHashMinNodesInValuableStateHashGroup,
+			RequireMinNodesOnHeight:          config.criterionNodesStateHashRequireMinNodesOnHeight,
 		},
 	}
 	if err := criteria.Validate(); err != nil {
@@ -85,10 +66,10 @@ func main() {
 
 	mon, err := monitor.NewNetworkMonitoring(
 		initialState,
-		monitor.NetworkSchemeChar(*networkScheme),
-		*statsHistorySize,
-		monitor.NewNodesStatsScraperHTTP(*nodeStatsURL),
-		*networkErrorsStreak,
+		monitor.NetworkSchemeChar(config.networkScheme),
+		config.statsHistorySize,
+		monitor.NewNodesStatsScraperHTTP(config.nodeStatsURL),
+		config.networkErrorsStreak,
 		criteria,
 	)
 	if err != nil {
@@ -115,7 +96,7 @@ func main() {
 		}()
 
 		monitoringService := service.NewNetworkMonitoringService(&mon)
-		authMiddleWare := middleware.NewHTTPAuthTokenMiddleware(*httpAuthHeader, *httpAuthToken)
+		authMiddleWare := middleware.NewHTTPAuthTokenMiddleware(config.httpAuthHeader, config.httpAuthToken)
 
 		// public URLs
 		http.HandleFunc("/health", monitoringService.NetworkHealth)
@@ -123,9 +104,9 @@ func main() {
 		http.Handle("/state", authMiddleWare(http.HandlerFunc(monitoringService.SetMonitorState)))
 
 		// run monitor service
-		monitorDone := mon.RunInBackground(ctx, *pollNodesStatsInterval)
+		monitorDone := mon.RunInBackground(ctx, config.pollNodesStatsInterval)
 
-		server := http.Server{Addr: *bindAddr, Handler: nil}
+		server := http.Server{Addr: config.bindAddr, Handler: nil}
 		server.RegisterOnShutdown(func() {
 			// wait for monitor
 			<-monitorDone
