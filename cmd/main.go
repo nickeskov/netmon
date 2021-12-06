@@ -138,7 +138,7 @@ func main() {
 	zap.S().Info("sever successfully started")
 
 	sig := <-gracefulStop
-	zap.S().Infof("caught signal %q, stopping...", sig.String())
+	zap.S().Infof("caught signal %q, stopping...", sig)
 	cancel()
 	if err := <-httpDone; err != nil {
 		zap.S().Fatalf("HTTP server error: %v", err)

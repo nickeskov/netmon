@@ -58,10 +58,8 @@ func (s *NetworkMonitoringService) SetMonitorState(w http.ResponseWriter, r *htt
 	prevMonState := s.monitor.State()
 	s.monitor.ChangeState(monState)
 	if prevMonState != monState {
-		zap.S().Infof("monitor state has been successfully changed from %q to %q",
-			prevMonState.String(), monState.String(),
-		)
+		zap.S().Infof("monitor state has been successfully changed from %q to %q", prevMonState, monState)
 	} else {
-		zap.S().Infof("monitor state hasn't been changed, current state is %q", prevMonState.String())
+		zap.S().Infof("monitor state hasn't been changed, current state is %q", prevMonState)
 	}
 }

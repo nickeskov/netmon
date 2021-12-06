@@ -157,8 +157,8 @@ func (m *NetworkMonitor) CheckNodes(now time.Time) error {
 		stateHashCriterion:   calc.AlertStateHashCriterion(),
 	}
 	outdatedStats := m.statsHistory.PushFront(newStatsSnapshot)
-	zap.S().Debugf("FRESH stats has been pushed to stats history storage, stats=%q", newStatsSnapshot.String())
-	zap.S().Debugf("OUTDATED stats has been dropped from stats history storage, stats=%q", outdatedStats.String())
+	zap.S().Debugf("FRESH stats has been pushed to stats history storage, stats=%q", newStatsSnapshot)
+	zap.S().Debugf("OUTDATED stats has been dropped from stats history storage, stats=%q", outdatedStats)
 
 	if newStatsSnapshot.nodesDownCriterion || newStatsSnapshot.heightCriterion || newStatsSnapshot.stateHashCriterion {
 		zap.S().Debugf("network %q error has been detected, increasing networkErrorStreak counter", m.netSchemeChar)
@@ -224,7 +224,7 @@ func (m *NetworkMonitor) ChangeState(state NetworkMonitoringState) {
 		return // state the same - do nothing
 	}
 
-	zap.S().Debugf("changing monitor state to %q", state.String())
+	zap.S().Debugf("changing monitor state to %q", state)
 	m.monitorState = state
 	// we have to reset the streak in case of state changing
 	m.networkErrorStreak = 0
