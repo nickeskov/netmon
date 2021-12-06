@@ -57,6 +57,15 @@ func (c *appConfig) parseENVAndRegisterCLI(l *zap.SugaredLogger) {
 	flag.IntVar(&c.criterionNodesStateHashRequireMinNodesOnHeight, "criterion-statehash-require-min-nodes-on-same-height", lookupEnvOrInt(l, "CRITERION_STATEHASH_REQUIRE_MIN_NODES_ON_SAME_HEIGHT", 4), "Minimum required amount of nodes on same height for statehash criterion. ENV: 'CRITERION_STATEHASH_REQUIRE_MIN_NODES_ON_SAME_HEIGHT'.")
 }
 
+func (c *appConfig) parseCLI() {
+	flag.Parse()
+}
+
+func (c *appConfig) registerAndParseAll(l *zap.SugaredLogger) {
+	c.parseENVAndRegisterCLI(l)
+	c.parseCLI()
+}
+
 func lookupEnvOrString(envKey string, defaultVal string) string {
 	if val, ok := os.LookupEnv(envKey); ok {
 		return val

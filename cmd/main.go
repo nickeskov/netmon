@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,8 +20,7 @@ var config = appConfig{}
 func init() {
 	// setup logger for config parsing
 	_, s := common.SetupLogger("INFO")
-	config.parseENVAndRegisterCLI(s)
-	flag.Parse()
+	config.registerAndParseAll(s)
 	// setup logger again for further usage
 	_, _ = common.SetupLogger(config.logLevel)
 }
