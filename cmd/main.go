@@ -15,17 +15,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var config = appConfig{}
-
-func init() {
+func main() {
+	config := appConfig{}
 	// setup logger for config parsing
 	_, s := common.SetupLogger("INFO")
 	config.registerAndParseAll(s)
 	// setup logger again for further usage
 	_, _ = common.SetupLogger(config.logLevel)
-}
-
-func main() {
 	zap.S().Info("starting server...")
 
 	// basic validations
