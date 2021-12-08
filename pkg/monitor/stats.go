@@ -40,9 +40,10 @@ func (n *nodesWithStats) UnmarshalJSON(bytes []byte) error {
 
 func (n nodesWithStats) Filter(condition func(node *nodeWithStats) bool) nodesWithStats {
 	var nodes nodesWithStats
-	for _, node := range n {
-		if condition(&node) {
-			nodes = append(nodes, node)
+	for i := range n {
+		node := &n[i]
+		if condition(node) {
+			nodes = append(nodes, *node)
 		}
 	}
 	return nodes
