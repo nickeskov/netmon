@@ -19,6 +19,7 @@
 *.prof
 
 .idea/
+.vscode/
 vendor/
 build/
 out/
@@ -28,8 +29,5 @@ out/
 *.txt
 *.log
 *.mem
-!cmd/wmd/symbols.txt
 **/.DS_Store
 .DS_Store
-blocks_storage
-key_value
