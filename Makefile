@@ -14,7 +14,7 @@ vetcheck:
 	golangci-lint run
 
 fmtcheck:
-	@gofmt -l -s $(SOURCE_DIRS)
+	@gofmt -l -s $(SOURCE_DIRS) | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi
 
 clean:
 	rm -rf build/
