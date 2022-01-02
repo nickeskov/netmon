@@ -28,6 +28,9 @@ func main() {
 	if config.statsHistorySize < 1 {
 		zap.S().Fatal("'stats-history-size' parameter should be greater than zero")
 	}
+	if config.maxPollResponseSize < 1 {
+		zap.S().Fatal("'max-poll-response-size' parameter should be greater than zero")
+	}
 	initialState, err := monitor.NewNetworkMonitoringStateFromString(config.initialMonState)
 	if err != nil {
 		zap.S().Fatalf("invalid monitoring initial state %q", initialState.String())
@@ -62,7 +65,7 @@ func main() {
 		initialState,
 		monitor.NetworkSchemeChar(config.networkScheme),
 		config.statsHistorySize,
-		monitor.NewNodesStatsScraperHTTP(config.nodeStatsURL),
+		monitor.NewNodesStatsScraperHTTP(config.nodeStatsURL, int64(config.maxPollResponseSize)),
 		config.networkErrorsStreak,
 		criteria,
 	)

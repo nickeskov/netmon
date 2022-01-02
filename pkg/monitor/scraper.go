@@ -9,16 +9,19 @@ import (
 	"go.uber.org/zap"
 )
 
+const DefaultNodeStatsPollResponseSize = 128 * 1024
+
 type NodesStatsScrapper interface {
 	ScrapeNodeStats() (nodesWithStats, error)
 }
 
 type nodesStatsScrapper struct {
-	nodesStatsUrl string
+	nodesStatsUrl   string
+	maxResponseSize int64
 }
 
-func NewNodesStatsScraperHTTP(nodesStatsUrl string) NodesStatsScrapper {
-	return nodesStatsScrapper{nodesStatsUrl: nodesStatsUrl}
+func NewNodesStatsScraperHTTP(nodesStatsUrl string, maxResponseSize int64) NodesStatsScrapper {
+	return nodesStatsScrapper{nodesStatsUrl: nodesStatsUrl, maxResponseSize: maxResponseSize}
 }
 
 func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
@@ -31,9 +34,10 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 			zap.S().Errorf("failed to close response body: %v", err)
 		}
 	}()
+	responseBody := io.LimitReader(resp.Body, s.maxResponseSize)
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 16*1024))
+		body, err := io.ReadAll(responseBody)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +55,7 @@ func (s nodesStatsScrapper) ScrapeNodeStats() (nodesWithStats, error) {
 	}
 
 	allNodes := nodesWithStats{}
-	if err := json.NewDecoder(resp.Body).Decode(&allNodes); err != nil {
+	if err := json.NewDecoder(responseBody).Decode(&allNodes); err != nil {
 		return nodesWithStats{}, err
 	}
 

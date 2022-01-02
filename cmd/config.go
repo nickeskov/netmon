@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nickeskov/netmon/pkg/monitor"
 	"go.uber.org/zap"
 )
 
@@ -15,6 +16,7 @@ type appConfig struct {
 	networkScheme          string
 	nodeStatsURL           string
 	pollNodesStatsInterval time.Duration
+	maxPollResponseSize    int
 	statsHistorySize       int
 	networkErrorsStreak    int
 	initialMonState        string
@@ -39,6 +41,7 @@ func (c *appConfig) parseENVAndRegisterCLI(l *zap.SugaredLogger) {
 	flag.StringVar(&c.networkScheme, "network-scheme", lookupEnvOrString("NETWORK_SCHEME", "W"), "WAVES network scheme character. Supported networks: 'W' (mainnet), 'T' (testnet), 'S' (stagenet). ENV: 'NETWORK_SCHEME'.")
 	flag.StringVar(&c.nodeStatsURL, "stats-url", lookupEnvOrString("STATS_URL", "https://waves-nodes-get-height.wavesnodes.com/"), "Nodes statistics URL. ENV: 'STATS_URL'.")
 	flag.DurationVar(&c.pollNodesStatsInterval, "stats-poll-interval", lookupEnvOrDuration(l, "STATS_POLL_INTERVAL", time.Minute), "Nodes statistics polling interval. ENV: 'STATS_POLL_INTERVAL'.")
+	flag.IntVar(&c.maxPollResponseSize, "max-poll-response-size", lookupEnvOrInt(l, "MAX_POLL_RESPONSE_SIZE", monitor.DefaultNodeStatsPollResponseSize), "Max nodes stats poll response size in bytes. ENV: 'MAX_POLL_RESPONSE_SIZE'.")
 	flag.IntVar(&c.statsHistorySize, "stats-history-size", lookupEnvOrInt(l, "STATS_HISTORY_SIZE", 10), "Exact amount of latest nodes stats that will be kept. ENV: 'STATS_HISTORY_SIZE'.")
 	flag.IntVar(&c.networkErrorsStreak, "network-errors-streak", lookupEnvOrInt(l, "NETWORK_ERRORS_STREAK", 5), "Network will be considered as degraded after that errors streak. ENV: 'NETWORK_ERRORS_STREAK'.")
 	flag.StringVar(&c.initialMonState, "initial-mon-state", lookupEnvOrString("INITIAL_MON_STATE", "active"), "Initial monitoring state. Possible states: 'active', 'frozen_operates_stable', 'frozen_degraded'. ENV: 'INITIAL_MON_STATE'.")

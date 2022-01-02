@@ -79,7 +79,7 @@ func TestNodesStatsScrapper_ScrapeNodeStats(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	scraper := NewNodesStatsScraperHTTP(srv.URL)
+	scraper := NewNodesStatsScraperHTTP(srv.URL, DefaultNodeStatsPollResponseSize)
 	actual, err := scraper.ScrapeNodeStats()
 	require.NoError(t, err)
 	sort.Slice(actual, func(i, j int) bool {
@@ -98,7 +98,7 @@ func TestNodesStatsScrapper_ScrapeNodeStats_InvalidJSON(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	scraper := NewNodesStatsScraperHTTP(srv.URL)
+	scraper := NewNodesStatsScraperHTTP(srv.URL, DefaultNodeStatsPollResponseSize)
 	_, err := scraper.ScrapeNodeStats()
 	require.Error(t, err)
 }
@@ -111,7 +111,7 @@ func TestNodesStatsScrapper_ScrapeNodeStats_InvalidHTTPCode(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	scraper := NewNodesStatsScraperHTTP(srv.URL)
+	scraper := NewNodesStatsScraperHTTP(srv.URL, DefaultNodeStatsPollResponseSize)
 	_, err := scraper.ScrapeNodeStats()
 	require.Error(t, err)
 }
