@@ -87,7 +87,7 @@ func TestNetworkMonitoringService_SetMonitorState(t *testing.T) {
 	tests := []struct {
 		testName        string
 		httpMethod      string
-		httpRequestBody io.ReadCloser
+		httpRequestBody io.Reader
 		httpStatusCode  int
 		mockCallTimes   int
 		stateUpdate     monitor.NetworkMonitoringState
@@ -103,20 +103,20 @@ func TestNetworkMonitoringService_SetMonitorState(t *testing.T) {
 			testName:        "InvalidJSON",
 			httpMethod:      http.MethodPost,
 			httpStatusCode:  http.StatusBadRequest,
-			httpRequestBody: io.NopCloser(strings.NewReader(`{"state":"ac`)),
+			httpRequestBody: strings.NewReader(`{"state":"ac`),
 			mockCallTimes:   0,
 		},
 		{
 			testName:        "InvalidState",
 			httpMethod:      http.MethodPost,
 			httpStatusCode:  http.StatusBadRequest,
-			httpRequestBody: io.NopCloser(strings.NewReader(`{"state":"blah-blah-blah"}`)),
+			httpRequestBody: strings.NewReader(`{"state":"blah-blah-blah"}`),
 			mockCallTimes:   0,
 		},
 		{
 			testName:        "PositiveScenarioActiveToActive",
 			httpMethod:      http.MethodPost,
-			httpRequestBody: io.NopCloser(strings.NewReader(`{"state":"active"}`)),
+			httpRequestBody: strings.NewReader(`{"state":"active"}`),
 			httpStatusCode:  http.StatusOK,
 			mockCallTimes:   1,
 			stateUpdate:     monitor.StateActive,
@@ -125,7 +125,7 @@ func TestNetworkMonitoringService_SetMonitorState(t *testing.T) {
 		{
 			testName:        "PositiveScenarioDegradedToOperatesStable",
 			httpMethod:      http.MethodPost,
-			httpRequestBody: io.NopCloser(strings.NewReader(`{"state":"frozen_operates_stable"}`)),
+			httpRequestBody: strings.NewReader(`{"state":"frozen_operates_stable"}`),
 			httpStatusCode:  http.StatusOK,
 			mockCallTimes:   1,
 			stateUpdate:     monitor.StateFrozenNetworkOperatesStable,
@@ -139,8 +139,7 @@ func TestNetworkMonitoringService_SetMonitorState(t *testing.T) {
 
 			mockMonitor := monitor.NewMockMonitor(ctrl)
 			if tc.httpStatusCode == http.StatusOK {
-				stateCall := mockMonitor.EXPECT().State().Times(1).Return(tc.prevState)
-				mockMonitor.EXPECT().ChangeState(tc.stateUpdate).After(stateCall).Times(1)
+				mockMonitor.EXPECT().ChangeState(tc.stateUpdate).Times(1).Return(tc.prevState)
 			}
 
 			w := httptest.NewRecorder()
@@ -157,7 +156,10 @@ func TestNetworkMonitoringService_SetMonitorState(t *testing.T) {
 				require.NoError(t, err)
 				require.Empty(t, data)
 			} else {
-				require.Equal(t, fmt.Sprintf("%d %s", tc.httpStatusCode, http.StatusText(tc.httpStatusCode)), w.Result().Status)
+				require.Equal(t,
+					fmt.Sprintf("%d %s", tc.httpStatusCode, http.StatusText(tc.httpStatusCode)),
+					w.Result().Status,
+				)
 				require.Equal(t, tc.httpStatusCode, w.Result().StatusCode)
 			}
 		})

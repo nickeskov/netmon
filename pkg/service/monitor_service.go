@@ -45,20 +45,19 @@ func (s *NetworkMonitoringService) SetMonitorState(w http.ResponseWriter, r *htt
 	var jsonRequest stateChangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&jsonRequest); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		zap.S().Warnf("invalid set monitor state request: %v", err)
-		return
-	}
-
-	monState, err := monitor.NewNetworkMonitoringStateFromString(jsonRequest.State)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		zap.S().Warnf("invalid set monitor state request, failed to parse JSON: %v", err)
 		return
 	}
-	prevMonState := s.monitor.State()
-	s.monitor.ChangeState(monState)
-	if prevMonState != monState {
-		zap.S().Infof("monitor state has been successfully changed from %q to %q", prevMonState, monState)
+
+	newMonState, err := monitor.NewNetworkMonitoringStateFromString(jsonRequest.State)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		zap.S().Warnf("invalid set monitor state request, invalid state string value: %v", err)
+		return
+	}
+	prevMonState := s.monitor.ChangeState(newMonState)
+	if prevMonState != newMonState {
+		zap.S().Infof("monitor state has been successfully changed from %q to %q", prevMonState, newMonState)
 	} else {
 		zap.S().Infof("monitor state hasn't been changed, current state is %q", prevMonState)
 	}

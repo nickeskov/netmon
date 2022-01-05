@@ -74,7 +74,7 @@ type Monitor interface {
 	NetworkStatusInfo() NetworkStatusInfo
 	NetworkOperatesStable() bool
 	State() NetworkMonitoringState
-	ChangeState(state NetworkMonitoringState)
+	ChangeState(state NetworkMonitoringState) (previous NetworkMonitoringState)
 }
 
 type NetworkMonitor struct {
@@ -216,18 +216,20 @@ func (m *NetworkMonitor) State() NetworkMonitoringState {
 	return m.monitorState
 }
 
-func (m *NetworkMonitor) ChangeState(state NetworkMonitoringState) {
+func (m *NetworkMonitor) ChangeState(state NetworkMonitoringState) (previous NetworkMonitoringState) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	previous = m.monitorState
 
 	if m.monitorState == state {
-		return // state the same - do nothing
+		return previous // state the same - do nothing
 	}
 
-	zap.S().Debugf("changing monitor state to %q", state)
+	zap.S().Debugf("changing monitor state from %q to %q", previous, state)
 	m.monitorState = state
 	// we have to reset the streak in case of state changing
 	m.networkErrorStreak = 0
+	return previous
 }
 
 func (m *NetworkMonitor) Run(ctx context.Context, pollNodesStatsInterval time.Duration) {

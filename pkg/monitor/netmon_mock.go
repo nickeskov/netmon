@@ -35,9 +35,11 @@ func (m *MockMonitor) EXPECT() *MockMonitorMockRecorder {
 }
 
 // ChangeState mocks base method.
-func (m *MockMonitor) ChangeState(state NetworkMonitoringState) {
+func (m *MockMonitor) ChangeState(state NetworkMonitoringState) NetworkMonitoringState {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ChangeState", state)
+	ret := m.ctrl.Call(m, "ChangeState", state)
+	ret0, _ := ret[0].(NetworkMonitoringState)
+	return ret0
 }
 
 // ChangeState indicates an expected call of ChangeState.
