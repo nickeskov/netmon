@@ -3,7 +3,7 @@ module github.com/nickeskov/netmon
 go 1.17
 
 require (
-	github.com/gammazero/deque v0.1.0
+	github.com/gammazero/deque v0.1.1
 	github.com/golang/mock v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
