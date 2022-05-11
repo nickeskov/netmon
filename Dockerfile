@@ -1,10 +1,11 @@
-FROM golang:1.18.2-alpine AS builder
+FROM golang:1.18.2-alpine3.15 AS builder
 ARG APP=/app
 RUN apk add make
 # disable cgo for go build
 ENV CGO_ENABLED=0
 WORKDIR ${APP}
 COPY go.mod .
+COPY go.sum .
 RUN go mod download
 COPY cmd cmd
 COPY pkg pkg
