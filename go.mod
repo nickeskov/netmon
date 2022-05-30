@@ -2,6 +2,12 @@ module github.com/nickeskov/netmon
 
 go 1.17
 
+// exclude unused vulnerable dependencies
+exclude (
+	golang.org/x/text v0.3.0
+	golang.org/x/text v0.3.3
+)
+
 require (
 	github.com/gammazero/deque v0.1.2
 	github.com/golang/mock v1.6.0
