@@ -32,13 +32,13 @@ func (s *statsDataSnapshot) String() string {
 
 type statsHistoryDeque struct {
 	maxLen int
-	deque  *deque.Deque
+	deque  *deque.Deque[*statsDataSnapshot]
 }
 
 func newStatsDeque(maxLen int) statsHistoryDeque {
 	return statsHistoryDeque{
 		maxLen: maxLen,
-		deque:  deque.New(maxLen),
+		deque:  deque.New[*statsDataSnapshot](maxLen),
 	}
 }
 
@@ -48,22 +48,22 @@ func (d *statsHistoryDeque) PushFront(snapshot *statsDataSnapshot) (back *statsD
 		panic("statsHistoryDeque: push front <nil> data")
 	}
 	if d.deque.Len() >= d.maxLen {
-		back = d.deque.PopBack().(*statsDataSnapshot)
+		back = d.deque.PopBack()
 	}
 	d.deque.PushFront(snapshot)
 	return back
 }
 
 func (d *statsHistoryDeque) Front() *statsDataSnapshot {
-	return d.deque.Front().(*statsDataSnapshot)
+	return d.deque.Front()
 }
 
 func (d *statsHistoryDeque) Back() *statsDataSnapshot {
-	return d.deque.Back().(*statsDataSnapshot)
+	return d.deque.Back()
 }
 
 func (d *statsHistoryDeque) At(i int) *statsDataSnapshot {
-	return d.deque.At(i).(*statsDataSnapshot)
+	return d.deque.At(i)
 }
 
 func (d *statsHistoryDeque) Len() int {
