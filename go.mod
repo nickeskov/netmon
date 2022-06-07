@@ -1,6 +1,6 @@
 module github.com/nickeskov/netmon
 
-go 1.17
+go 1.18
 
 // exclude unused vulnerable dependencies
 exclude (
