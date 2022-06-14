@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/nickeskov/netmon/pkg/common"
 	"github.com/nickeskov/netmon/pkg/monitor"
@@ -103,7 +104,7 @@ func main() {
 		// run monitor service
 		monitorDone := mon.RunInBackground(ctx, config.pollNodesStatsInterval)
 
-		server := http.Server{Addr: config.bindAddr, Handler: nil}
+		server := http.Server{Addr: config.bindAddr, Handler: nil, ReadHeaderTimeout: time.Second}
 		server.RegisterOnShutdown(func() {
 			// wait for monitor
 			<-monitorDone
