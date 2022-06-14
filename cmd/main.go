@@ -104,7 +104,7 @@ func main() {
 		// run monitor service
 		monitorDone := mon.RunInBackground(ctx, config.pollNodesStatsInterval)
 
-		server := http.Server{Addr: config.bindAddr, Handler: nil, ReadHeaderTimeout: time.Second}
+		server := http.Server{Addr: config.bindAddr, Handler: nil, ReadHeaderTimeout: time.Second, ReadTimeout: 10 * time.Second}
 		server.RegisterOnShutdown(func() {
 			// wait for monitor
 			<-monitorDone
