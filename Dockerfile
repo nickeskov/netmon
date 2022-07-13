@@ -1,4 +1,4 @@
-FROM golang:1.18.3-alpine3.16 AS builder
+FROM golang:1.19rc2-alpine3.16 AS builder
 ARG APP=/app
 RUN apk add make
 # disable cgo for go build
