@@ -1,131 +1,139 @@
 # netmon
 
-Сервис базового мониторинга сетей блокчейна **WAVES** (mainnet, stagenet, testnet). Сервис хранит все данные в
-оперативной памяти не имеет постоянного хранилища, вследствие чего после перезапуска сервис теряет все накопленные
-статистики и оценки.
+A basic monitoring service for **WAVES** blockchain networks (mainnet, stagenet, testnet).
+The service stores all data in RAM and has no persistent storage, meaning that after a restart it loses all accumulated
+statistics and assessments.
 
 ## Command line parameters
 
-Далее будут описаны параметры, которые можно передать исполняемому файлу при запуске для изменения его поведения по
-умолчанию. Также, с помощью переменных окружения можно переопределять параметры по умолчанию.
+Below are the parameters that can be passed to the executable at startup to change its default behavior.
+Environment variables can also be used to override the default parameters.
 
 ### Basic command line parameters
 
-Базовые настройки:
+Basic settings:
 
-- _--log-level_ - уровень логирования. Поддерживаемые уровни:  _DEV_, _DEBUG_, _INFO_, _WARN_, _ERROR_, _FATAL_. По
-  умолчанию _INFO_. Переменная окружения: _LOG_LEVEL_.
-- _--bind-addr_ - IP адрес и порт, на котором будет запущен сервис. По умолчанию _0.0.0.0:2048_. Переменная окружения:
-  _BIND_ADDR_.
-- _--network-scheme_ - байт сети WAVES, за которой будет наблюдать сервис. Поддерживаемые сети: _W_ (mainnet),
-  _T_ (testnet), _S_ (stagenet), _E_ (custom). По умолчанию _W_. Переменная окружения: _NETWORK_SCHEME_.
-- _--stats-url_ - URL, с которого будет собираться статистика по узлам сети. По
-  умолчанию _https://waves-nodes-get-height.wavesnodes.com/_. Переменная окружения: _STATS_URL_.
-- _--stats-poll-interval_ - интервал сбора, через который будет собираться статистика по узлам сети и обновляться
-  статистики. По умолчанию _1m_. Переменная окружения: _STATS_POLL_INTERVAL_.
-- _--max-poll-response-size_ - максимальный размер ответа в байтах по URL сбора статистик. По умолчанию: _131072_.
-  Переменная окружения: _MAX_POLL_RESPONSE_SIZE_.
-- _--stats-history-size_ - количество последних хранимых снимков статистик. Должен быть больше 0. По умолчанию _10_.
-  Переменная окружения: _STATS_HISTORY_SIZE_.
-- _--network-errors-streak_ - число последовательных ошибок, после будет считаться, что сеть находится в деградированном
-  состоянии. По умолчанию _5_. Переменная окружения: _NETWORK_ERRORS_STREAK_.
-- _--initial-mon-state_ - состояние мониторинга при старте. Возможные значения: _active_, _frozen_operates_stable_,
-  _frozen_degraded_. По умолчанию _active_. Переменная окружения: _INITIAL_MON_STATE_.
-- _--http-auth-header_ - HTTP заголовок, в котором будет проверяться наличие токена для доступа к приватным URL. По
-  умолчанию _X-Waves-Monitor-Auth_. Переменная окружения: _HTTP_AUTH_HEADER_.
-- _--http-auth-token_ - токен доступа к приватным URL. **ОБЯЗАТЕЛЬНЫЙ** параметр. Значение по умолчанию отсутствует.
-  Переменная окружения: _HTTP_AUTH_TOKEN_.
+* *--log-level* — logging level. Supported levels: *DEV*, *DEBUG*, *INFO*, *WARN*, *ERROR*, *FATAL*.
+  Default: *INFO*. Environment variable: *LOG_LEVEL*.
+* *--bind-addr* — IP address and port on which the service will run.
+  Default: *0.0.0.0:2048*. Environment variable: *BIND_ADDR*.
+* *--network-scheme* — WAVES network byte to be monitored. Supported networks:
+  *W* (mainnet), *T* (testnet), *S* (stagenet), *E* (custom).
+  Default: *W*. Environment variable: *NETWORK_SCHEME*.
+* *--stats-url* — URL from which node statistics will be collected.
+  Default: *[https://waves-nodes-get-height.wavesnodes.com/](https://waves-nodes-get-height.wavesnodes.com/)*.
+  Environment variable: *STATS_URL*.
+* *--stats-poll-interval* — interval at which network node statistics are collected and updated.
+  Default: *1m*. Environment variable: *STATS_POLL_INTERVAL*.
+* *--max-poll-response-size* — maximum response size in bytes when fetching statistics.
+  Default: *131072*. Environment variable: *MAX_POLL_RESPONSE_SIZE*.
+* *--stats-history-size* — the number of most recent stored statistics snapshots. Must be > 0.
+  Default: *10*. Environment variable: *STATS_HISTORY_SIZE*.
+* *--network-errors-streak* — number of consecutive errors after which the network is considered degraded.
+  Default: *5*. Environment variable: *NETWORK_ERRORS_STREAK*.
+* *--initial-mon-state* — monitoring state at startup. Possible values:
+  *active*, *frozen_operates_stable*, *frozen_degraded*.
+  Default: *active*. Environment variable: *INITIAL_MON_STATE*.
+* *--http-auth-header* — HTTP header in which the token for access to private URLs will be checked.
+  Default: *X-Waves-Monitor-Auth*. Environment variable: *HTTP_AUTH_HEADER*.
+* *--http-auth-token* — access token for private URLs. **REQUIRED** parameter.
+  No default value. Environment variable: *HTTP_AUTH_TOKEN*.
 
 ## Monitoring criteria
 
-Далее будут описаны опции (критерии), которые непосредственно влияют на мониторинг ошибок. Состояние сети будет
-оцениваться по серии *последовательных* ошибок, которые генерирует сервис. При генерации ошибки будет увеличиваться
-счётчик последовательных ошибок, однако если после серии ошибок произойдёт сбор статистик и их оценка, в результате
-которой ошибка *не* будет сгенерирована, то счётчик последовательности ошибок сбросится.
+Below are the options (criteria) that directly affect error monitoring.
+Network state is evaluated based on a series of *consecutive* errors generated by the service.
+When an error is generated, the consecutive error counter increases; however, if a statistics collection cycle succeeds
+*without* generating an error, the counter resets.
 
 #### Down nodes criterion
 
-- _--criterion-down-total-part_ - пороговое значение при достижении которого будет генерироваться ошибка. Считается как
-  отношение недоступных узлов ко всем отслеживаемым узлам. Диапазон значений: от _0.0_ не включительно до _1.0_
-  включительно. По умолчанию _0.3_. Переменная окружения: _CRITERION_DOWN_TOTAL_PART_.
+* *--criterion-down-total-part* — threshold at which an error is generated.
+  Calculated as the ratio of unavailable nodes to all monitored nodes.
+  Value range: from *0.0* (exclusive) to *1.0* (inclusive).
+  Default: *0.3*. Environment variable: *CRITERION_DOWN_TOTAL_PART*.
 
 #### Nodes height criterion
 
-- _--criterion-height-diff_ - разница высот узлов сети при достижении которой будет генерироваться ошибка. По
-  умолчанию _10_ блоков. Переменная окружения: _CRITERION_HEIGHT_DIFF_.
-- _--criterion-height-require-min-nodes-on-same-height_ - необходимое количество узлов сети, которые находятся на одной
-  высоте. По умолчанию _2_ узла. Переменная окружения: _CRITERION_HEIGHT_REQUIRE_MIN_NODES_ON_SAME_HEIGHT_.
+* *--criterion-height-diff* — allowed height difference between network nodes before an error is generated.
+  Default: *10* blocks. Environment variable: *CRITERION_HEIGHT_DIFF*.
+* *--criterion-height-require-min-nodes-on-same-height* — required number of nodes at the same height.
+  Default: *2* nodes. Environment variable: *CRITERION_HEIGHT_REQUIRE_MIN_NODES_ON_SAME_HEIGHT*.
 
 #### Statehash criterion
 
-Здесь под группой понимается группа узлов сети на одной высоте, узлы которой имеют одинаковые стейтхеши.
+A *group* here refers to a group of nodes at the same height that have identical state hashes.
 
-- _--criterion-statehash-min-groups-on-same-height_ - минимальное количество групп узлов сети с разными стейтхешами на
-  одной высоте. По умолчанию _2_ группы. Переменная окружения: _CRITERION_STATEHASH_MIN_GROUPS_ON_SAME_HEIGHT_.
-- _--criterion-statehash-min-valuable-groups_ - минимальное значение _значащих_ групп узлов на одной высоте. По
-  умолчанию _2_ группы. Переменная окружения: _CRITERION_STATEHASH_MIN_VALUABLE_GROUPS_.
-- _--criterion-statehash-min-nodes-in-valuable-group_ - минимальное количество узлов сети в группе. Если группа узлов с
-  одинаковыми стейтхешами имеет данное и более количество узлов, то она считается _значащей_. По умолчанию _2_ узла.
-  Переменная окружения: _CRITERION_STATEHASH_MIN_NODES_IN_VALUABLE_GROUP_.
-- _--criterion-statehash-require-min-nodes-on-same-height_ - необходимое количество узлов сети, которые находятся на
-  одной высоте. По умолчанию _4_ узла. Переменная окружения: _CRITERION_STATEHASH_REQUIRE_MIN_NODES_ON_SAME_HEIGHT_.
+* *--criterion-statehash-min-groups-on-same-height* — minimum number of node groups with different state hashes at a
+  single height.
+  Default: *2* groups. Environment variable: *CRITERION_STATEHASH_MIN_GROUPS_ON_SAME_HEIGHT*.
+* *--criterion-statehash-min-valuable-groups* — minimum number of *valuable* groups at a single height.
+  Default: *2* groups. Environment variable: *CRITERION_STATEHASH_MIN_VALUABLE_GROUPS*.
+* *--criterion-statehash-min-nodes-in-valuable-group* — minimum number of nodes in a group for it to be considered
+  *valuable*.
+  Default: *2* nodes. Environment variable: *CRITERION_STATEHASH_MIN_NODES_IN_VALUABLE_GROUP*.
+* *--criterion-statehash-require-min-nodes-on-same-height* — required number of nodes at the same height.
+  Default: *4* nodes. Environment variable: *CRITERION_STATEHASH_REQUIRE_MIN_NODES_ON_SAME_HEIGHT*.
 
 ## HTTP API
 
 ### Public URLs
 
-1) **GET** _/health_ - возвращает байт отслеживаемой сети, текущее состояние сети, максимальную высоту и время
-   последнего обновления статистик. Если высоту не удалось получить хотя бы с одного узла, который участвует в
-   мониторинге, то вместо высоты будет отдано _-1_.
+1. **GET** */health* — returns the monitored network byte, the current network state, the maximum height, and the
+   timestamp of the last statistics update.
+   If height cannot be obtained from at least one monitored node, *-1* is returned instead of height.
 
-    - Возможные HTTP коды ответа:
-        - _200 OK_
-        - _405 Method Not Allowed_
-        - _500 Internal Server Error_
-    - Возвращаемый результат:
-        - `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":true,"height":2882018}` - сеть в порядке
-        - `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":false,"height":2882018}` - сеть в
-          деградированном состоянии, но если хотя бы один узел доступен
-        - `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":false,"height":-1}` - сеть в деградированном
-          состоянии и все узлы недоступны
-    - Пример запроса: `curl http://localhost:2048/health`
+    * Possible HTTP response codes:
+
+        * *200 OK*
+        * *405 Method Not Allowed*
+        * *500 Internal Server Error*
+    * Response examples:
+
+        * `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":true,"height":2882018}` — network is healthy
+        * `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":false,"height":2882018}` — network is
+          degraded, but at least one node is available
+        * `{"updated":"2021-12-02T19:35:24.144994Z","network":"W","status":false,"height":-1}` — network is degraded and
+          all nodes are unavailable
+    * Example request:
+      `curl http://localhost:2048/health`
 
 ### Private URLs
 
-1) **POST** _/state_ - устанавливает состояние мониторинга. В случае, если новое состояние отличается от старого, то
-   установка нового состояния сбрасывает счётчик последовательности ошибок.
+1. **POST** */state* — sets the monitoring state.
+   If the new state differs from the old one, switching states resets the consecutive error counter.
 
-    - Возможные HTTP коды ответа:
-        - _200 OK_
-        - _400 Bad Request_
-        - _403 Forbidden_
-        - _405 Method Not Allowed_
-        - _500 Internal Server Error_
-    - Возвращаемый результат: отсутствует
-    - Возможные значения тела запроса:
-        - `{"state":"active"}` - установка мониторинга в обычный (активный) режим работы
-        - `{"state":"frozen_operates_stable"}` - установка мониторинга в режим, при котором он всегда будет отвечать на
-          запрос **GET** _/health_ ответом  `{"status":true}`
-        - `{"state":"frozen_degraded"}` - установка мониторинга в режим, при котором он всегда будет отвечать на
-          запрос **GET** _/health_ ответом  `{"status":false}`
-    - Пример
-      запроса: `curl -X POST -H "Content-Type: application/json" -d '{"state":"active"}' http://localhost:2048/state`
+    * Possible HTTP response codes:
+
+        * *200 OK*
+        * *400 Bad Request*
+        * *403 Forbidden*
+        * *405 Method Not Allowed*
+        * *500 Internal Server Error*
+    * Response body: none
+    * Possible request bodies:
+
+        * `{"state":"active"}` — switch monitoring to normal (active) mode
+        * `{"state":"frozen_operates_stable"}` — frozen mode: **GET** */health* always returns `{"status":true}`
+        * `{"state":"frozen_degraded"}` — frozen mode: **GET** */health* always returns `{"status":false}`
+    * Example request:
+      `curl -X POST -H "Content-Type: application/json" -d '{"state":"active"}' http://localhost:2048/state`
 
 ## Build
 
-Требования: на машине должны быть установлены утилита `Make`, компилятор и стандартная библиотека языка `Go`. Собрать
-исполняемый файл можно командой `make build`. Исполняемый файл после сборки будет внутри директории `build`.
+Requirements: the machine must have `Make`, the Go compiler, and the Go standard library installed.
+Build the executable using `make build`.
+After building, the executable will be located in the `build` directory.
 
 ## Docker
 
-Сборка проекта происходит при значении переменной окружения `CGO_ENABLED=0`, соответственно исполняемый файл сервиса не
-требует динамически подключаемых библиотек и содержит в себе все необходимые зависимости для работы.
+The project is built with `CGO_ENABLED=0`, so the service binary does not require dynamic libraries and contains all
+necessary dependencies.
 
-Сервис мониторинга внутри контейнер запускается от имени пользователя _netmon_. Часовая зона внутри контейнера
-установлена в значение _Etc/UTC_.
+The monitoring service inside the container runs under the user *netmon*.
+The time zone inside the container is set to *Etc/UTC*.
 
-Аргументы мониторинга можно пробросить внутрь контейнера просто добавив эти аргументы в конец команды запуска
-контейнера. Пример:
+Monitoring arguments can be passed into the container by appending them to the docker run command. Example:
 
 ```shell
 $ docker build -t netmon -f Dockerfile . # build container
